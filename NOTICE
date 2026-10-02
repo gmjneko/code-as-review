@@ -1,0 +1,7 @@
+code-as-review
+
+The review prompts under src/main/resources/prompts and the review checklists,
+file-selection patterns and extension list under src/main/resources/review are
+adapted from open-code-review (https://github.com/alibaba/open-code-review),
+Copyright 2026 alibaba/open-code-review Contributors, licensed under the
+Apache License, Version 2.0.

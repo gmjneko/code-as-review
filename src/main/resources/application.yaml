@@ -8,3 +8,47 @@ spring:
     password: password@mysql
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  data:
+    redis:
+      host: ${CR_REDIS_HOST:localhost}
+      port: ${CR_REDIS_PORT:6379}
+      password: ${CR_REDIS_PASSWORD:}
+      database: ${CR_REDIS_DATABASE:0}
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+code-review:
+  workspace-root: ${CR_WORKSPACE_ROOT:${user.home}/.code-as-review}
+  local-repo-roots:
+    - ${CR_LOCAL_REPO_ROOT:${user.home}/DevLab}
+  executor:
+    task-concurrency: 2
+    queue-capacity: 100
+  review:
+    default-effort: medium
+    max-prompt-diff-tokens: 60000
+    max-file-diff-tokens: 30000
+    max-task-tokens: 2000000
+    max-comments: 50
+    plan-line-threshold: 80
+    max-iters: 40
+    git-timeout-seconds: 120
+  llm-default:
+    base-url: ${CR_LLM_BASE_URL:}
+    api-key: ${CR_LLM_API_KEY:}
+    model-name: ${CR_LLM_MODEL:}
+  security:
+    jwt-secret: ${CR_JWT_SECRET:change-me-to-a-long-random-secret-at-least-32-bytes}
+    access-token-ttl: 30m
+    refresh-token-ttl: 14d
+    credential-key: ${CR_CREDENTIAL_KEY:change-me-credential-encryption-key}
+
