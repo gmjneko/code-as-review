@@ -1,0 +1,181 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc", "import", "unicorn", "jsx-a11y", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "ignorePatterns": ["dist", "src/routeTree.gen.ts"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "react/no-unstable-nested-components": [
+      "warn",
+      {
+        "allowAsProps": true
+      }
+    ],
+    "react/react-in-jsx-scope": "off",
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": {
+          "attributes": false
+        }
+      }
+    ],
+    "typescript/await-thenable": "error",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-default-export": "error",
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        "allow": ["dayjs/locale/*", "@testing-library/jest-dom/vitest"]
+      }
+    ],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "no-unused-vars": [
+      "error",
+      {
+        "ignoreRestSiblings": true,
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@/features/*/*"],
+            "message": "Import a feature through its public API ('@/features/<name>'), never its internals."
+          },
+          {
+            "group": ["@/routes/*", "@/routes"],
+            "message": "Routes are leaves of the dependency graph; nothing may import them."
+          },
+          {
+            "group": ["antd/es/*", "antd/lib/*"],
+            "message": "Import from 'antd' (tree-shakable ESM) instead of internal paths."
+          },
+          {
+            "group": ["@/shared/*/*"],
+            "message": "Import a shared module through its index ('@/shared/<module>'); inside a module use relative imports."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["*.config.ts"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["src/routes/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": ["src/features/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/features/*/*"],
+                "message": "Import a feature through its public API ('@/features/<name>'), never its internals."
+              },
+              {
+                "group": ["@/routes/*", "@/routes"],
+                "message": "Routes are leaves of the dependency graph; nothing may import them."
+              },
+              {
+                "group": ["antd/es/*", "antd/lib/*"],
+                "message": "Import from 'antd' (tree-shakable ESM) instead of internal paths."
+              },
+              {
+                "group": ["@/shared/*/*"],
+                "message": "Import a shared module through its index ('@/shared/<module>'); inside a module use relative imports."
+              },
+              {
+                "group": ["@/app", "@/app/*"],
+                "message": "Features and shared code must not depend on the app shell; receive what you need via props, context or configure* hooks."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/features/*/*"],
+                "message": "Import a feature through its public API ('@/features/<name>'), never its internals."
+              },
+              {
+                "group": ["@/routes/*", "@/routes"],
+                "message": "Routes are leaves of the dependency graph; nothing may import them."
+              },
+              {
+                "group": ["antd/es/*", "antd/lib/*"],
+                "message": "Import from 'antd' (tree-shakable ESM) instead of internal paths."
+              },
+              {
+                "group": ["@/shared/*/*"],
+                "message": "Import a shared module through its index ('@/shared/<module>'); inside a module use relative imports."
+              },
+              {
+                "group": ["@/app", "@/app/*"],
+                "message": "Features and shared code must not depend on the app shell; receive what you need via props, context or configure* hooks."
+              },
+              {
+                "group": ["@/features", "@/features/*"],
+                "message": "shared/ is business-agnostic and must not import features."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
