@@ -11,7 +11,7 @@ import org.koaks.codereview.common.persistence.BaseEntity;
 @Setter
 @Builder
 @TableName("sys_user")
-public class SysUser extends BaseEntity {
+public class SystemUser extends BaseEntity {
 
     public static final String STATUS_ACTIVE = "ACTIVE";
 
