@@ -1,7 +1,7 @@
 package org.koaks.codereview.scm;
 
 import org.koaks.codereview.common.exception.BizException;
-import org.koaks.codereview.repo.SourceType;
+import org.koaks.codereview.repo.domain.SourceType;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;

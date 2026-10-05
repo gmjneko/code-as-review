@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.review.comment.CandidateComment;
 import org.koaks.codereview.review.domain.ReviewComment;
 import org.koaks.codereview.review.domain.ReviewEnums;
-import org.koaks.codereview.review.domain.ReviewMappers;
 import org.koaks.codereview.review.domain.ReviewTask;
+import org.koaks.codereview.review.mapper.ReviewCommentMapper;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DbResultPublisher implements ResultPublisher {
 
-    private final ReviewMappers.CommentMapper commentMapper;
+    private final ReviewCommentMapper commentMapper;
 
     @Override
     public boolean supports(ReviewTask task) {

@@ -6,12 +6,12 @@ import org.koaks.codereview.scm.ReviewTarget;
 import org.koaks.codereview.scm.git.GitCli;
 import org.springframework.util.StringUtils;
 
-final class ReviewTargets {
+public final class ReviewTargets {
 
     private ReviewTargets() {
     }
 
-    static ReviewTarget of(ReviewTask task) {
+    public static ReviewTarget of(ReviewTask task) {
         return switch (task.getTargetType()) {
             case LOCAL_WORKING_TREE -> new ReviewTarget.LocalWorkingTree();
             case COMMIT_RANGE -> {

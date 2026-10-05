@@ -1,7 +1,7 @@
 package org.koaks.codereview.scm;
 
-import org.koaks.codereview.repo.CodeRepository;
-import org.koaks.codereview.repo.SourceType;
+import org.koaks.codereview.repo.domain.CodeRepository;
+import org.koaks.codereview.repo.domain.SourceType;
 
 import java.nio.file.Path;
 
