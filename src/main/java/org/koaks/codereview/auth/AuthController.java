@@ -37,4 +37,5 @@ public class AuthController {
         authService.logout(request);
         return ApiResponse.ok();
     }
+
 }

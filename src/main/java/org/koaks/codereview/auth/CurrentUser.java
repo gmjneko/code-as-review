@@ -17,4 +17,5 @@ public final class CurrentUser {
         }
         throw BizException.unauthorized("not authenticated");
     }
+
 }

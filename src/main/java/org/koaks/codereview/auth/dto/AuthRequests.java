@@ -11,9 +11,13 @@ public final class AuthRequests {
     }
 
     public record Register(
-            @NotBlank @Size(min = 3, max = 64) @Pattern(regexp = "^[A-Za-z0-9_.-]+$") String username,
-            @Email @Size(max = 128) String email,
-            @NotBlank @Size(min = 8, max = 72) String password) {
+            @NotBlank @Size(min = 3, max = 64) @Pattern(regexp = "^[A-Za-z0-9_.-]+$")
+            String username,
+            @Email @Size(max = 128)
+            String email,
+            @NotBlank @Size(min = 8, max = 72)
+            String password
+    ) {
     }
 
     public record Login(@NotBlank String username, @NotBlank String password) {

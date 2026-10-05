@@ -3,6 +3,7 @@ package org.koaks.codereview.auth;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.auth.dto.AuthRequests;
+
 import org.koaks.codereview.auth.dto.TokenResponse;
 import org.koaks.codereview.common.exception.BizException;
 import org.koaks.codereview.user.SysUser;
@@ -21,11 +22,13 @@ public class AuthService {
     private final TokenService tokenService;
 
     public TokenResponse register(AuthRequests.Register request) {
-        SysUser user = new SysUser();
-        user.setUsername(request.username());
-        user.setEmail(StringUtils.hasText(request.email()) ? request.email() : null);
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setStatus(SysUser.STATUS_ACTIVE);
+        SysUser user = SysUser.builder()
+                .username(request.username())
+                .email(StringUtils.hasText(request.email()) ? request.email() : null)
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .status(SysUser.STATUS_ACTIVE)
+                .build();
+
         try {
             userMapper.insert(user);
         } catch (DuplicateKeyException e) {
@@ -35,8 +38,9 @@ public class AuthService {
     }
 
     public TokenResponse login(AuthRequests.Login request) {
-        SysUser user = userMapper.selectOne(Wrappers.<SysUser>lambdaQuery()
-                .eq(SysUser::getUsername, request.username()));
+        SysUser user = userMapper.selectOne(
+                Wrappers.<SysUser>lambdaQuery().eq(SysUser::getUsername, request.username())
+        );
         if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw BizException.unauthorized("invalid username or password");
         }
@@ -59,4 +63,5 @@ public class AuthService {
     public void logout(AuthRequests.Refresh request) {
         tokenService.revokeRefreshToken(request.refreshToken());
     }
+
 }

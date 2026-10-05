@@ -1,12 +1,15 @@
 package org.koaks.codereview.user;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.koaks.codereview.common.persistence.BaseEntity;
 
 @Getter
 @Setter
+@Builder
 @TableName("sys_user")
 public class SysUser extends BaseEntity {
 
