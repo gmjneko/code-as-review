@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Entry point reserved for GitHub/GitLab webhooks. The intended flow: verify the signature
  * ({@code X-Hub-Signature-256} / {@code X-Gitlab-Token}), de-duplicate on the delivery id
- * ({@code webhook_event}), check that the commenter may trigger reviews, persist a
+ * ({@code webhook_event}), parse a slash command at the start of an issue / PR comment (e.g.
+ * {@code /review high}; mentions of a bot account are deliberately not supported), check that the
+ * commenter may trigger reviews, persist a
  * {@code review_task} with trigger type {@code WEBHOOK_COMMAND}, and answer 202 before the review
  * runs asynchronously.
  */

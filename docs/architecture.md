@@ -37,3 +37,12 @@ Controller 不直接访问 Mapper。跨模块访问通过对方的 Service 或�
 - 与评审算法有关的代码放在 `review/agent`、`review/diff` 或 `review/comment`。
 - 与外部代码托管平台交互的代码放在 `scm` 的 Provider 或适配器目录。
 - 真正跨模块的基础设施才放到 `common`。
+
+## 评审触发方式
+
+评论区触发只支持 `/命令`（如 `/review`、`/review high`），不支持 @机器人账号：
+
+- `/命令` 只需判断评论是否以命令开头，参数可以直接跟在后面，不易误触发；
+- @账号 需要专门的机器人账号或 GitHub App，还要识别各种提及写法，并防止机器人自己的回复再次触发。
+
+两者都来自同一类 Webhook 事件（Issue / PR 评论），由 `webhook` 模块解析后创建 `trigger_type = WEBHOOK_COMMAND` 的评审任务。
