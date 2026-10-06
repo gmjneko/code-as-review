@@ -165,7 +165,7 @@ export function ReviewDetailPage() {
           <Alert
             type={task.status === 'SUCCEEDED' ? 'warning' : 'error'}
             showIcon
-            message={task.status === 'SUCCEEDED' ? '评审已完成，但有警告' : '评审失败'}
+            title={task.status === 'SUCCEEDED' ? '评审已完成，但有警告' : '评审失败'}
             description={<span style={{ whiteSpace: 'pre-wrap' }}>{task.errorMessage}</span>}
           />
         )}

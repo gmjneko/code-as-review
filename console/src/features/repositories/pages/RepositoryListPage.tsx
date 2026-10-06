@@ -47,7 +47,8 @@ export function RepositoryListPage() {
       title: '默认分支',
       dataIndex: 'defaultBranch',
       width: 140,
-      render: (_, repo) => repo.defaultBranch ?? '-',
+      // Clearing the branch on edit stores an empty string.
+      render: (_, repo) => repo.defaultBranch || '-',
     },
     { title: '创建时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 180 },
     {

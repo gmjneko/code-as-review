@@ -158,5 +158,8 @@ sequenceDiagram
 2. **`POST /api/auth/logout` 改为 permitAll**：refresh token 本身就是凭证。目前它要求 access token，前端只能先确保 token 新鲜再读取 refresh token，以免刷新轮换后注销了一个已作废的 token。
 3. **细粒度错误码**：目前 message 为英文、code 较粗（`BAD_REQUEST` 等），前端无法本地化提示。
 4. **refresh token 放入 httpOnly Cookie**：降低 XSS 窃取风险（需要配合 CSRF 防护）。
-5. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前显示 `#仓库ID`）。
+5. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前用仓库列表在本地映射名称，取不到时显示 `#仓库ID`）。
+7. **`ReviewDtos.Create` 缺少 `externalRef`**：`PULL_REQUEST` / `ISSUE` 目标无法从控制台创建，新建评审表单目前只提供“本地工作区”和“提交区间”。
+8. **`RepoDtos.Update` 无法清空默认分支**：`null` 表示不修改，前端只能发送 `""` 来清空，数据库中因此存的是空字符串而不是 `NULL`。
+9. **评审意见只在任务结束时一次性写入**：运行中无法查看中间结果，详情页在任务结束后才请求意见列表。
 6. **ID 序列化**：当前为数据库自增 ID，安全；若改用雪花 ID 等超过 2^53 的值，必须序列化为字符串。
