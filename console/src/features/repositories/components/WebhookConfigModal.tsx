@@ -1,23 +1,63 @@
 import { useEffect, useState } from 'react'
 
+import { InfoCircleOutlined } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import {
-  Modal,
   Button,
   Checkbox,
   Divider,
   Input,
   InputNumber,
   List,
+  Modal,
   Select,
-  Space,
+  Tooltip,
   Typography,
 } from 'antd'
-import { useQuery } from '@tanstack/react-query'
 
 import { runAction } from '@/shared/utils'
 
 import { repositoryQueries, useReplaceTriggerRules, useRotateWebhook } from '../queries'
 import type { Repository, WebhookRule } from '../types'
+
+const EVENT_KIND_LABELS: Record<WebhookRule['eventKind'], string> = {
+  PULL_REQUEST: 'Pull Request',
+  ISSUE: 'Issue',
+  PR_COMMENT: 'Pull Request 评论',
+  ISSUE_COMMENT: 'Issue 评论',
+}
+
+const MODE_LABELS: Record<WebhookRule['mode'], string> = {
+  AUTO: '自动处理',
+  COMMAND: '命令触发',
+}
+
+const EFFORT_OPTIONS = [
+  { value: 'LOW', label: '低' },
+  { value: 'MEDIUM', label: '中' },
+  { value: 'HIGH', label: '高' },
+]
+
+function humanRuleName(rule: WebhookRule): string {
+  const event = EVENT_KIND_LABELS[rule.eventKind]
+  if (rule.eventKind === 'PULL_REQUEST' && rule.action === 'opened') {
+    return 'Pull Request 创建时自动评审'
+  }
+  if (rule.eventKind === 'PULL_REQUEST' && rule.action === 'synchronize') {
+    return 'Pull Request 更新代码时自动评审'
+  }
+  if (rule.eventKind === 'ISSUE' && rule.action === 'opened') {
+    return 'Issue 创建时记录待处理任务'
+  }
+  if (rule.mode === 'COMMAND') {
+    return `${event}中使用 ${rule.command ?? '/review'} 命令`
+  }
+  return `${event} ${MODE_LABELS[rule.mode]}`
+}
+
+function technicalRuleName(rule: WebhookRule): string {
+  return `${rule.eventKind} / ${rule.action} / ${rule.mode}${rule.command ? ` ${rule.command}` : ''}`
+}
 
 export function WebhookConfigModal({ repository }: { repository: Repository }) {
   const [open, setOpen] = useState(false)
@@ -44,6 +84,7 @@ export function WebhookConfigModal({ repository }: { repository: Repository }) {
       </Button>
       <Modal
         title={`GitHub Webhook：${repository.name}`}
+        width="min(960px, calc(100vw - 32px))"
         open={open}
         onCancel={() => setOpen(false)}
         footer={[
@@ -84,33 +125,55 @@ export function WebhookConfigModal({ repository }: { repository: Repository }) {
           size="small"
           dataSource={rules}
           renderItem={(rule, index) => (
-            <List.Item>
-              <Space>
+            <List.Item style={{ paddingBlock: 14 }}>
+              <div
+                style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  gap: 12,
+                  minWidth: 0,
+                  width: '100%',
+                }}
+              >
                 <Checkbox
                   checked={rule.enabled}
                   onChange={(event) => toggle(index, event.target.checked)}
                 />
-                <Typography.Text>
-                  {rule.eventKind} / {rule.action} / {rule.mode}
-                  {rule.command ? ` ${rule.command}` : ''}
-                </Typography.Text>
+                <div
+                  style={{
+                    alignItems: 'center',
+                    display: 'flex',
+                    flex: 1,
+                    gap: 8,
+                    minWidth: 0,
+                  }}
+                >
+                  <Typography.Text ellipsis style={{ display: 'block', minWidth: 0 }}>
+                    {humanRuleName(rule)}
+                  </Typography.Text>
+                  <Tooltip title={`内部规则：${technicalRuleName(rule)}`}>
+                    <InfoCircleOutlined
+                      aria-label="查看内部规则名称"
+                      style={{ color: '#8c8c8c' }}
+                    />
+                  </Tooltip>
+                </div>
                 <Select
                   size="small"
+                  style={{ flex: '0 0 124px', width: 124 }}
                   value={rule.effort}
-                  options={['LOW', 'MEDIUM', 'HIGH'].map((effort) => ({
-                    value: effort,
-                    label: effort,
-                  }))}
+                  options={EFFORT_OPTIONS}
                   onChange={(effort) => updateRule(index, { effort })}
                 />
                 <InputNumber
                   size="small"
                   min={1}
+                  style={{ flex: '0 0 150px', width: 150 }}
                   placeholder="模型 ID"
                   value={rule.modelConfigId ?? undefined}
                   onChange={(modelConfigId) => updateRule(index, { modelConfigId })}
                 />
-              </Space>
+              </div>
             </List.Item>
           )}
         />
