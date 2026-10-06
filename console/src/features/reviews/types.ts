@@ -11,6 +11,21 @@ export type ReviewTriggerType = 'API' | 'WEBHOOK_COMMAND'
 
 export type ReviewEffort = 'LOW' | 'MEDIUM' | 'HIGH'
 
+export type ReviewCommentStatus = 'CONFIRMED' | 'FILTERED'
+
+// The backend stores these as plain strings, normalised by `review.agent.ReviewTools`.
+export type CommentSeverity = 'critical' | 'high' | 'medium' | 'low'
+
+export type CommentCategory =
+  | 'bug'
+  | 'security'
+  | 'performance'
+  | 'maintainability'
+  | 'test'
+  | 'style'
+  | 'documentation'
+  | 'other'
+
 /** Mirrors `review.task.dto.ReviewDtos.TaskView`. */
 export interface ReviewTask {
   id: number
@@ -55,4 +70,20 @@ export interface CreateReviewRequest {
   effort?: ReviewEffort
   background?: string
   modelConfigId?: number
+}
+
+/** Mirrors `review.task.dto.ReviewDtos.CommentView`. */
+export interface ReviewComment {
+  id: number
+  filePath: string
+  startLine: number | null
+  endLine: number | null
+  category: string
+  severity: string
+  content: string
+  existingCode: string | null
+  suggestionCode: string | null
+  round: number | null
+  status: ReviewCommentStatus
+  filterReason: string | null
 }

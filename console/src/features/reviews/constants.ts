@@ -1,4 +1,11 @@
-import type { ReviewEffort, ReviewTargetType, ReviewTaskStatus, ReviewTriggerType } from './types'
+import type {
+  CommentCategory,
+  CommentSeverity,
+  ReviewEffort,
+  ReviewTargetType,
+  ReviewTaskStatus,
+  ReviewTriggerType,
+} from './types'
 
 type BadgeStatus = 'Default' | 'Processing' | 'Success' | 'Error' | 'Warning'
 
@@ -9,6 +16,18 @@ export const REVIEW_STATUS_ENUM: Record<ReviewTaskStatus, { text: string; status
   SUCCEEDED: { text: '已完成', status: 'Success' },
   FAILED: { text: '失败', status: 'Error' },
   CANCELLED: { text: '已取消', status: 'Warning' },
+}
+
+/** The same status as an antd `Badge` status, for places outside ProTable. */
+export const REVIEW_STATUS_BADGE: Record<
+  BadgeStatus,
+  'default' | 'processing' | 'success' | 'error' | 'warning'
+> = {
+  Default: 'default',
+  Processing: 'processing',
+  Success: 'success',
+  Error: 'error',
+  Warning: 'warning',
 }
 
 export const REVIEW_TARGET_LABELS: Record<ReviewTargetType, string> = {
@@ -49,6 +68,24 @@ export const CREATABLE_TARGET_TYPES: readonly ReviewTargetType[] = [
 
 /** Mirrors `scm.git.GitCli#requireSafeRef`. */
 export const SAFE_GIT_REF = /^[A-Za-z0-9][A-Za-z0-9._/@{}^~-]{0,254}$/
+
+export const COMMENT_SEVERITY_META: Record<CommentSeverity, { label: string; color: string }> = {
+  critical: { label: '严重', color: 'magenta' },
+  high: { label: '高', color: 'red' },
+  medium: { label: '中', color: 'orange' },
+  low: { label: '低', color: 'blue' },
+}
+
+export const COMMENT_CATEGORY_LABELS: Record<CommentCategory, string> = {
+  bug: '缺陷',
+  security: '安全',
+  performance: '性能',
+  maintainability: '可维护性',
+  test: '测试',
+  style: '代码风格',
+  documentation: '文档',
+  other: '其他',
+}
 
 /** Mirrors `ReviewEnums.TaskStatus#terminal`. */
 export function isTerminalStatus(status: ReviewTaskStatus): boolean {

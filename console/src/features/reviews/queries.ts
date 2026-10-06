@@ -8,6 +8,9 @@ export const reviewKeys = {
   all: ['reviews'] as const,
   lists: () => [...reviewKeys.all, 'list'] as const,
   list: (params: ReviewListParams) => [...reviewKeys.lists(), params] as const,
+  detail: (id: number) => [...reviewKeys.all, 'detail', id] as const,
+  comments: (id: number, includeFiltered: boolean) =>
+    [...reviewKeys.detail(id), 'comments', { includeFiltered }] as const,
 }
 
 export const reviewQueries = {
@@ -21,6 +24,24 @@ export const reviewQueries = {
         query.state.data?.records.some((task) => !isTerminalStatus(task.status))
           ? ACTIVE_TASK_POLL_INTERVAL_MS
           : false,
+    }),
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: reviewKeys.detail(id),
+      queryFn: ({ signal }) => reviewApi.get(id, signal),
+      refetchInterval: (query) =>
+        query.state.data && !isTerminalStatus(query.state.data.status)
+          ? ACTIVE_TASK_POLL_INTERVAL_MS
+          : false,
+    }),
+  /**
+   * Comments are written in one go when the review finishes, so callers should only enable this
+   * for a task in a terminal status; the first fetch then already returns the complete set.
+   */
+  comments: (id: number, includeFiltered: boolean) =>
+    queryOptions({
+      queryKey: reviewKeys.comments(id, includeFiltered),
+      queryFn: ({ signal }) => reviewApi.comments(id, includeFiltered, signal),
     }),
 }
 

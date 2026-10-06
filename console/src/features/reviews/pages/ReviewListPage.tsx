@@ -1,7 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { Button, Popconfirm, Select, Typography } from 'antd'
 
 import { repositoryQueries } from '@/features/repositories'
@@ -39,7 +39,16 @@ export function ReviewListPage() {
   const cancel = useCancelReview()
 
   const columns: ProColumns<ReviewTask>[] = [
-    { title: 'ID', dataIndex: 'id', width: 80 },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      render: (_, task) => (
+        <Link to="/reviews/$reviewId" params={{ reviewId: task.id }}>
+          #{task.id}
+        </Link>
+      ),
+    },
     {
       title: '仓库',
       dataIndex: 'repositoryId',
@@ -92,9 +101,12 @@ export function ReviewListPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 80,
-      render: (_, task) =>
-        isTerminalStatus(task.status)
+      width: 120,
+      render: (_, task) => [
+        <Link key="view" to="/reviews/$reviewId" params={{ reviewId: task.id }}>
+          详情
+        </Link>,
+        ...(isTerminalStatus(task.status)
           ? []
           : [
               <Popconfirm
@@ -107,7 +119,8 @@ export function ReviewListPage() {
                   取消
                 </Button>
               </Popconfirm>,
-            ],
+            ]),
+      ],
     },
   ]
 

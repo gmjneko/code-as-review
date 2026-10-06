@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedModelConfigsIndexRouteImport } from './routes/_authenticated/model-configs/index'
 import { Route as AuthenticatedRepositoriesIndexRouteImport } from './routes/_authenticated/repositories/index'
 import { Route as AuthenticatedReviewsIndexRouteImport } from './routes/_authenticated/reviews/index'
+import { Route as AuthenticatedReviewsReviewIdRouteImport } from './routes/_authenticated/reviews/$reviewId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -54,11 +55,18 @@ const AuthenticatedReviewsIndexRoute =
     path: '/reviews/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedReviewsReviewIdRoute =
+  AuthenticatedReviewsReviewIdRouteImport.update({
+    id: '/reviews/$reviewId',
+    path: '/reviews/$reviewId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
   '/model-configs/': typeof AuthenticatedModelConfigsIndexRoute
   '/repositories/': typeof AuthenticatedRepositoriesIndexRoute
   '/reviews/': typeof AuthenticatedReviewsIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/': typeof AuthenticatedIndexRoute
+  '/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
   '/model-configs': typeof AuthenticatedModelConfigsIndexRoute
   '/repositories': typeof AuthenticatedRepositoriesIndexRoute
   '/reviews': typeof AuthenticatedReviewsIndexRoute
@@ -77,6 +86,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
   '/_authenticated/model-configs/': typeof AuthenticatedModelConfigsIndexRoute
   '/_authenticated/repositories/': typeof AuthenticatedRepositoriesIndexRoute
   '/_authenticated/reviews/': typeof AuthenticatedReviewsIndexRoute
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/reviews/$reviewId'
     | '/model-configs/'
     | '/repositories/'
     | '/reviews/'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/'
+    | '/reviews/$reviewId'
     | '/model-configs'
     | '/repositories'
     | '/reviews'
@@ -104,6 +116,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/_authenticated/'
+    | '/_authenticated/reviews/$reviewId'
     | '/_authenticated/model-configs/'
     | '/_authenticated/repositories/'
     | '/_authenticated/reviews/'
@@ -166,11 +179,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReviewsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/reviews/$reviewId': {
+      id: '/_authenticated/reviews/$reviewId'
+      path: '/reviews/$reviewId'
+      fullPath: '/reviews/$reviewId'
+      preLoaderRoute: typeof AuthenticatedReviewsReviewIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedReviewsReviewIdRoute: typeof AuthenticatedReviewsReviewIdRoute
   AuthenticatedModelConfigsIndexRoute: typeof AuthenticatedModelConfigsIndexRoute
   AuthenticatedRepositoriesIndexRoute: typeof AuthenticatedRepositoriesIndexRoute
   AuthenticatedReviewsIndexRoute: typeof AuthenticatedReviewsIndexRoute
@@ -178,6 +199,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedReviewsReviewIdRoute: AuthenticatedReviewsReviewIdRoute,
   AuthenticatedModelConfigsIndexRoute: AuthenticatedModelConfigsIndexRoute,
   AuthenticatedRepositoriesIndexRoute: AuthenticatedRepositoriesIndexRoute,
   AuthenticatedReviewsIndexRoute: AuthenticatedReviewsIndexRoute,

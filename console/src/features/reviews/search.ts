@@ -17,3 +17,13 @@ export const reviewListSearchSchema = z.object({
     .catch(REVIEW_LIST_DEFAULTS.size),
   repositoryId: z.number().int().positive().optional().catch(undefined),
 })
+
+export const REVIEW_DETAIL_DEFAULTS = { includeFiltered: false } as const
+
+/** URL search params of the review detail page. */
+export const reviewDetailSearchSchema = z.object({
+  includeFiltered: z
+    .boolean()
+    .default(REVIEW_DETAIL_DEFAULTS.includeFiltered)
+    .catch(REVIEW_DETAIL_DEFAULTS.includeFiltered),
+})
