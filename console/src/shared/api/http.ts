@@ -9,6 +9,7 @@ export interface RequestOptions {
   query?: QueryParams
   body?: unknown
   signal?: AbortSignal
+  headers?: Record<string, string>
   /** Attach the bearer token and recover from a 401 by refreshing once. Defaults to `true`. */
   auth?: boolean
 }
@@ -51,7 +52,7 @@ async function send(
   options: RequestOptions,
   token: string | null,
 ): Promise<Response> {
-  const headers = new Headers({ Accept: 'application/json' })
+  const headers = new Headers({ Accept: 'application/json', ...options.headers })
   if (options.body !== undefined) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Bearer ${token}`)
 

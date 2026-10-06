@@ -41,7 +41,7 @@ async function performRefresh(staleAccessToken: string): Promise<string | null> 
 
   try {
     const tokens = await authApi.refresh(session.refreshToken)
-    useSessionStore.getState().signIn(tokens)
+    useSessionStore.getState().rotateTokens(tokens)
     return tokens.accessToken
   } catch (error) {
     if (error instanceof ApiError && error.isUnauthorized) {

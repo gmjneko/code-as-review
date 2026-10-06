@@ -15,7 +15,7 @@ function session(overrides: Partial<Session> = {}): Session {
     accessToken: 'access-1',
     refreshToken: 'refresh-1',
     accessTokenExpiresAt: Date.now() + 10 * 60_000,
-    user: { id: '1', username: 'alice' },
+    user: { id: 1, username: 'alice', email: null },
     ...overrides,
   }
 }
@@ -40,6 +40,7 @@ describe('refreshAccessToken', () => {
     expect(results).toEqual(['access-2', 'access-2', 'access-2'])
     expect(refresh).toHaveBeenCalledExactlyOnceWith('refresh-1')
     expect(useSessionStore.getState().session?.refreshToken).toBe('refresh-2')
+    expect(useSessionStore.getState().session?.user).toEqual(session().user)
   })
 
   it('reuses tokens that another tab rotated instead of spending the old refresh token', async () => {
@@ -49,7 +50,7 @@ describe('refreshAccessToken', () => {
     })
     localStorage.setItem(
       SESSION_STORAGE_KEY,
-      JSON.stringify({ state: { session: otherTab }, version: 1 }),
+      JSON.stringify({ state: { session: otherTab }, version: 2 }),
     )
 
     await expect(refreshAccessToken('access-1')).resolves.toBe('access-from-tab-b')

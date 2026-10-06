@@ -3,23 +3,26 @@ import { useMutation } from '@tanstack/react-query'
 import { authApi } from './api'
 import { getSession, useSessionStore } from './session-store'
 import { getAccessToken } from './token-refresh'
-import type { CurrentUser } from './types'
+import type { CurrentUser, LoginRequest, RegisterRequest, TokenResponse } from './types'
 
 export function useCurrentUser(): CurrentUser | null {
   return useSessionStore((state) => state.session?.user ?? null)
 }
 
+async function signIn(tokens: TokenResponse): Promise<void> {
+  const user = await authApi.me(tokens.accessToken)
+  useSessionStore.getState().signIn(tokens, user)
+}
+
 export function useLogin() {
   return useMutation({
-    mutationFn: authApi.login,
-    onSuccess: (tokens) => useSessionStore.getState().signIn(tokens),
+    mutationFn: async (body: LoginRequest) => signIn(await authApi.login(body)),
   })
 }
 
 export function useRegister() {
   return useMutation({
-    mutationFn: authApi.register,
-    onSuccess: (tokens) => useSessionStore.getState().signIn(tokens),
+    mutationFn: async (body: RegisterRequest) => signIn(await authApi.register(body)),
   })
 }
 

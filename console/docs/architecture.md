@@ -128,7 +128,7 @@ sequenceDiagram
 - **主动 + 被动**：过期前 30 秒主动刷新；收到 401 时再被动刷新一次并重试。
 - **退出**：会话中的用户消失（主动退出、refresh 失效、其他标签页退出或切换账号）时，`app/setup-auth.ts` 清空 Query 缓存并 `router.invalidate()`，路由守卫随即重定向到 `/login?redirect=…`。
 - **重定向安全**：`sanitizeRedirect` 只接受站内绝对路径，防止开放重定向。
-- **用户信息**：从 access token 的 claims（`sub`、`username`）解码，**仅用于展示**，不做任何权限判断。
+- **用户信息**：登录 / 注册拿到 token 后立即调用 `GET /api/auth/me` 获取，随会话一起持久化；刷新 token 时保留不变。
 
 ## 6. 错误处理与反馈
 
@@ -156,9 +156,8 @@ sequenceDiagram
 
 1. **接入 OpenAPI（springdoc）**：DTO 类型改为生成，消除手写类型与后端漂移的风险。
 2. **`POST /api/auth/logout` 改为 permitAll**：refresh token 本身就是凭证。目前它要求 access token，前端只能先确保 token 新鲜再读取 refresh token，以免刷新轮换后注销了一个已作废的 token。
-3. **新增 `GET /api/auth/me`**：返回用户资料 / 角色，替代前端解码 JWT。
-4. **时间字段使用 `Instant` / `OffsetDateTime`**：目前 `LocalDateTime` 序列化不带时区，前端只能按浏览器本地时区解析。
-5. **细粒度错误码**：目前 message 为英文、code 较粗（`BAD_REQUEST` 等），前端无法本地化提示。
-6. **refresh token 放入 httpOnly Cookie**：降低 XSS 窃取风险（需要配合 CSRF 防护）。
-7. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前显示 `#仓库ID`）。
-8. **ID 序列化**：当前为数据库自增 ID，安全；若改用雪花 ID 等超过 2^53 的值，必须序列化为字符串。
+3. **时间字段使用 `Instant` / `OffsetDateTime`**：目前 `LocalDateTime` 序列化不带时区，前端只能按浏览器本地时区解析。
+4. **细粒度错误码**：目前 message 为英文、code 较粗（`BAD_REQUEST` 等），前端无法本地化提示。
+5. **refresh token 放入 httpOnly Cookie**：降低 XSS 窃取风险（需要配合 CSRF 防护）。
+6. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前显示 `#仓库ID`）。
+7. **ID 序列化**：当前为数据库自增 ID，安全；若改用雪花 ID 等超过 2^53 的值，必须序列化为字符串。

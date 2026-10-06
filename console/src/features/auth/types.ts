@@ -18,8 +18,9 @@ export interface RegisterRequest {
   password: string
 }
 
-/** Identity derived from the access token claims (`sub`, `username`). */
+/** Mirrors `auth.dto.UserProfile`, returned by `GET /auth/me`. */
 export interface CurrentUser {
-  id: string
+  id: number
   username: string
+  email: string | null
 }

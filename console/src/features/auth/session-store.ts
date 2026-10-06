@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-import { decodeJwtClaims } from './jwt'
 import type { CurrentUser, TokenResponse } from './types'
 
 export const SESSION_STORAGE_KEY = 'cr-console.session'
@@ -16,17 +15,17 @@ export interface Session {
 
 interface SessionState {
   session: Session | null
-  signIn: (tokens: TokenResponse) => void
+  signIn: (tokens: TokenResponse, user: CurrentUser) => void
+  /** Replaces the tokens after a refresh and keeps the user; a no-op once signed out. */
+  rotateTokens: (tokens: TokenResponse) => void
   signOut: () => void
 }
 
-function toSession(tokens: TokenResponse): Session {
-  const claims = decodeJwtClaims(tokens.accessToken)
+function toTokens(tokens: TokenResponse): Omit<Session, 'user'> {
   return {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     accessTokenExpiresAt: Date.now() + tokens.expiresIn * 1000,
-    user: { id: claims.sub ?? '', username: claims.username ?? '' },
   }
 }
 
@@ -38,12 +37,18 @@ export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
       session: null,
-      signIn: (tokens) => set({ session: toSession(tokens) }),
+      signIn: (tokens, user) => set({ session: { ...toTokens(tokens), user } }),
+      rotateTokens: (tokens) =>
+        set((state) =>
+          state.session ? { session: { ...state.session, ...toTokens(tokens) } } : state,
+        ),
       signOut: () => set({ session: null }),
     }),
     {
       name: SESSION_STORAGE_KEY,
-      version: 1,
+      // v1 sessions carry a user decoded from the JWT (string id, no email): sign in again.
+      version: 2,
+      migrate: () => ({ session: null }),
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ session: state.session }),
     },

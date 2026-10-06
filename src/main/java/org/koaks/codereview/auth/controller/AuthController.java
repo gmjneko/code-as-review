@@ -4,8 +4,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.auth.dto.AuthRequests;
 import org.koaks.codereview.auth.dto.TokenResponse;
+import org.koaks.codereview.auth.dto.UserProfile;
+import org.koaks.codereview.auth.security.CurrentUser;
 import org.koaks.codereview.auth.service.AuthService;
 import org.koaks.codereview.common.api.ApiResponse;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +40,11 @@ public class AuthController {
     public ApiResponse<Void> logout(@Valid @RequestBody AuthRequests.Refresh request) {
         authService.logout(request);
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<UserProfile> me() {
+        return ApiResponse.ok(authService.profile(CurrentUser.id()));
     }
 
 }

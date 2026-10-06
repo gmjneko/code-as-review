@@ -3,6 +3,7 @@ package org.koaks.codereview.auth.service;
 import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.auth.dto.AuthRequests;
 import org.koaks.codereview.auth.dto.TokenResponse;
+import org.koaks.codereview.auth.dto.UserProfile;
 import org.koaks.codereview.common.exception.BizException;
 import org.koaks.codereview.user.domain.SystemUser;
 import org.koaks.codereview.user.service.UserAccountService;
@@ -49,6 +50,10 @@ public class AuthService {
 
     public void logout(AuthRequests.Refresh request) {
         tokenService.revokeRefreshToken(request.refreshToken());
+    }
+
+    public UserProfile profile(long userId) {
+        return UserProfile.of(userAccounts.requireActive(userId));
     }
 
 }
