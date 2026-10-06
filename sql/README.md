@@ -17,7 +17,7 @@ mysql -uroot -p < sql/V1__schema.sql
 | `sys_user` | 注册用户 |
 | `scm_credential` | GitHub PAT 等 SCM 凭证（加密存储，支持备注） |
 | `code_repository` | 用户添加的仓库，`source_type` 区分 LOCAL / GITHUB / GITLAB |
-| `llm_model_config` | 用户自己的 OpenAI 兼容模型配置，API Key 加密存储 |
+| `llm_model_config` | 用户自己的 OpenAI 兼容模型配置，API Key 加密存储；`model_names` 保存模型能力 JSON |
 | `review_task` | 一次审查任务（一个任务对应一次 Agent 审查会话，含计划结果与完成轮数） |
 | `review_comment` | 审查发现；被误报过滤剔除的记为 `FILTERED`，保留以便追溯 |
 | `webhook_event` | GitHub Webhook 投递记录，用 `(provider, delivery_id)` 去重 |

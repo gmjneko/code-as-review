@@ -1,7 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Button, Popconfirm, Tag } from 'antd'
+import { Button, Popconfirm, Space, Tag } from 'antd'
 
 import { runAction } from '@/shared/utils'
 
@@ -29,7 +29,17 @@ export function ModelConfigListPage() {
         </>
       ),
     },
-    { title: '模型', dataIndex: 'modelName', copyable: true },
+    {
+      title: '模型',
+      key: 'models',
+      render: (_, record) => (
+        <Space wrap>
+          {Object.keys(record.models).map((modelName) => (
+            <Tag key={modelName}>{modelName}</Tag>
+          ))}
+        </Space>
+      ),
+    },
     { title: 'Base URL', dataIndex: 'baseUrl', ellipsis: true, copyable: true },
     { title: 'API Key', dataIndex: 'apiKeyMasked' },
     { title: '创建时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 180 },

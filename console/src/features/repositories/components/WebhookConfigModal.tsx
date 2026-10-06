@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Button,
-  Checkbox,
-  Divider,
-  Input,
-  InputNumber,
-  List,
-  Modal,
-  Select,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Button, Checkbox, Divider, Input, List, Modal, Select, Tooltip, Typography } from 'antd'
 
+import {
+  modelConfigQueries,
+  modelSelectionValue,
+  parseModelSelection,
+} from '@/features/model-configs'
 import { runAction } from '@/shared/utils'
 
 import { repositoryQueries, useReplaceTriggerRules, useRotateWebhook } from '../queries'
@@ -62,36 +56,64 @@ function technicalRuleName(rule: WebhookRule): string {
 export function WebhookConfigModal({ repository }: { repository: Repository }) {
   const [open, setOpen] = useState(false)
   const [secret, setSecret] = useState<string | null>(null)
-  const [rules, setRules] = useState<WebhookRule[]>([])
+  const [draftRules, setDraftRules] = useState<WebhookRule[] | null>(null)
   const query = useQuery({ ...repositoryQueries.webhook(repository.id), enabled: open })
+  const rules = draftRules ?? query.data?.rules ?? []
+  const modelConfigs = useQuery({ ...modelConfigQueries.list(), enabled: open })
+  const defaultModel = modelConfigs.data?.find((model) => model.isDefault)
+  const modelOptions = modelConfigs.data?.map((config) => ({
+    label: config.name,
+    options: Object.keys(config.models).map((modelName) => ({
+      value: modelSelectionValue(config.id, modelName),
+      label: modelName,
+    })),
+  }))
+  const modelValueForRule = (rule: WebhookRule) => {
+    if (rule.modelConfigId != null) {
+      return rule.modelName ? modelSelectionValue(rule.modelConfigId, rule.modelName) : undefined
+    }
+    const defaultModelName = defaultModel ? Object.keys(defaultModel.models)[0] : undefined
+    return defaultModel && defaultModelName
+      ? modelSelectionValue(defaultModel.id, defaultModelName)
+      : undefined
+  }
   const rotate = useRotateWebhook()
   const replace = useReplaceTriggerRules()
 
-  useEffect(() => {
-    if (query.data) setRules(query.data.rules)
-  }, [query.data])
-
-  const toggle = (index: number, enabled: boolean) =>
-    setRules((current) => current.map((rule, i) => (i === index ? { ...rule, enabled } : rule)))
-
   const updateRule = (index: number, patch: Partial<WebhookRule>) =>
-    setRules((current) => current.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)))
+    setDraftRules(
+      rules.map((rule, ruleIndex) => (ruleIndex === index ? { ...rule, ...patch } : rule)),
+    )
 
   return (
     <>
-      <Button type="link" size="small" onClick={() => setOpen(true)}>
+      <Button
+        type="link"
+        size="small"
+        onClick={() => {
+          setDraftRules(null)
+          setOpen(true)
+        }}
+      >
         Webhook
       </Button>
       <Modal
         title={`GitHub Webhook：${repository.name}`}
-        width="min(960px, calc(100vw - 32px))"
+        width={760}
         open={open}
         onCancel={() => setOpen(false)}
         footer={[
           <Button
             key="save"
             type="primary"
-            onClick={() => runAction(() => replace.mutateAsync({ id: repository.id, rules }))}
+            loading={replace.isPending}
+            disabled={!query.data}
+            onClick={() =>
+              runAction(async () => {
+                await replace.mutateAsync({ id: repository.id, rules })
+                setDraftRules(null)
+              })
+            }
           >
             保存规则
           </Button>,
@@ -100,27 +122,48 @@ export function WebhookConfigModal({ repository }: { repository: Repository }) {
           </Button>,
         ]}
       >
+        <Typography.Text strong style={{ display: 'block' }}>
+          Webhook URL
+        </Typography.Text>
+        <Input readOnly value={query.data?.endpoint ?? ''} style={{ marginTop: 8 }} />
         {(secret ?? query.data?.secret) ? (
-          <>
-            <Typography.Text strong>新 Secret（只显示本次）</Typography.Text>
+          <div style={{ marginTop: 12 }}>
+            <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+              新 Secret（只显示本次）
+            </Typography.Text>
             <Input.Password readOnly value={secret ?? query.data?.secret ?? ''} />
-          </>
+          </div>
         ) : null}
-        <Typography.Text strong>Webhook URL</Typography.Text>
-        <Input readOnly value={query.data?.endpoint ?? ''} />
-        <Button
-          loading={rotate.isPending}
-          onClick={() =>
-            runAction(async () => {
-              const result = await rotate.mutateAsync(repository.id)
-              setSecret(result.secret)
-            })
-          }
-        >
-          生成/轮换 Secret
-        </Button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <Button
+            loading={rotate.isPending}
+            onClick={() =>
+              runAction(async () => {
+                const result = await rotate.mutateAsync(repository.id)
+                setSecret(result.secret)
+              })
+            }
+          >
+            生成/轮换 Secret
+          </Button>
+        </div>
         <Divider />
         <Typography.Text strong>触发规则</Typography.Text>
+        <div
+          style={{
+            color: '#8c8c8c',
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: '28px minmax(0, 1fr) 124px 220px',
+            marginTop: 12,
+            paddingBottom: 8,
+          }}
+        >
+          <span />
+          <Typography.Text type="secondary">触发条件</Typography.Text>
+          <Typography.Text type="secondary">评审强度</Typography.Text>
+          <Typography.Text type="secondary">模型配置</Typography.Text>
+        </div>
         <List<WebhookRule>
           size="small"
           dataSource={rules}
@@ -129,15 +172,16 @@ export function WebhookConfigModal({ repository }: { repository: Repository }) {
               <div
                 style={{
                   alignItems: 'center',
-                  display: 'flex',
+                  display: 'grid',
                   gap: 12,
+                  gridTemplateColumns: '28px minmax(0, 1fr) 124px 220px',
                   minWidth: 0,
                   width: '100%',
                 }}
               >
                 <Checkbox
                   checked={rule.enabled}
-                  onChange={(event) => toggle(index, event.target.checked)}
+                  onChange={(event) => updateRule(index, { enabled: event.target.checked })}
                 />
                 <div
                   style={{
@@ -159,19 +203,30 @@ export function WebhookConfigModal({ repository }: { repository: Repository }) {
                   </Tooltip>
                 </div>
                 <Select
-                  size="small"
-                  style={{ flex: '0 0 124px', width: 124 }}
+                  size="middle"
+                  aria-label="评审强度"
+                  style={{ width: 124 }}
                   value={rule.effort}
                   options={EFFORT_OPTIONS}
                   onChange={(effort) => updateRule(index, { effort })}
                 />
-                <InputNumber
-                  size="small"
-                  min={1}
-                  style={{ flex: '0 0 150px', width: 150 }}
-                  placeholder="模型 ID"
-                  value={rule.modelConfigId ?? undefined}
-                  onChange={(modelConfigId) => updateRule(index, { modelConfigId })}
+                <Select
+                  size="middle"
+                  aria-label="模型配置"
+                  allowClear
+                  loading={modelConfigs.isPending}
+                  optionFilterProp="label"
+                  options={modelOptions}
+                  showSearch
+                  style={{ width: 220 }}
+                  value={modelValueForRule(rule)}
+                  onChange={(value) => {
+                    const selected = typeof value === 'string' ? parseModelSelection(value) : null
+                    updateRule(index, {
+                      modelConfigId: selected?.configId ?? null,
+                      modelName: selected?.modelName ?? null,
+                    })
+                  }}
                 />
               </div>
             </List.Item>

@@ -40,7 +40,7 @@ public class TriggerRuleService {
             RepositoryTriggerRule match = existing.stream().filter(r -> sameKey(r, incoming)).findFirst().orElse(null);
             if (match == null) {
                 if (incoming.getModelConfigId() != null) {
-                    models.checkUsable(userId, incoming.getModelConfigId());
+                    models.checkUsable(userId, incoming.getModelConfigId(), incoming.getModelName());
                 }
                 mapper.insert(incoming);
                 result.add(incoming);
@@ -49,8 +49,9 @@ public class TriggerRuleService {
                 match.setEnabled(incoming.getEnabled());
                 match.setEffort(incoming.getEffort());
                 match.setModelConfigId(incoming.getModelConfigId());
+                match.setModelName(incoming.getModelName());
                 if (match.getModelConfigId() != null) {
-                    models.checkUsable(userId, match.getModelConfigId());
+                    models.checkUsable(userId, match.getModelConfigId(), match.getModelName());
                 }
                 mapper.updateById(match);
                 result.add(match);

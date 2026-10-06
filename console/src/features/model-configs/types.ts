@@ -5,17 +5,28 @@ export interface ModelConfig {
   id: number
   name: string
   baseUrl: string
-  modelName: string
+  models: Record<string, ModelCapabilities>
   apiKeyMasked: string
   isDefault: boolean
   createdAt: InstantString
+}
+
+export interface ModelCapabilities {
+  limit: {
+    context: number
+    output: number
+  }
+  modalities: {
+    input: string[]
+    reasoning_effort: string[]
+  }
 }
 
 /** Mirrors `llm.dto.ModelConfigDtos.Create`. */
 export interface CreateModelConfigRequest {
   name: string
   baseUrl: string
-  modelName: string
+  models: Record<string, ModelCapabilities>
   apiKey: string
   isDefault: boolean
 }

@@ -27,7 +27,8 @@ public final class ReviewDtos {
             @Pattern(regexp = "^[1-9][0-9]{0,18}$", message = "must be a positive number") String externalRef,
             ReviewEnums.Effort effort,
             @Size(max = 8000) String background,
-            Long modelConfigId) {
+            Long modelConfigId,
+            @Size(max = 128) String modelName) {
     }
 
     public record TaskView(
@@ -41,6 +42,8 @@ public final class ReviewDtos {
             String headSha,
             String externalRef,
             ReviewEnums.Effort effort,
+            Long modelConfigId,
+            String modelName,
             ReviewEnums.TaskStatus status,
             Integer filesChanged,
             Integer filesReviewed,
@@ -56,7 +59,8 @@ public final class ReviewDtos {
 
         public static TaskView of(ReviewTask t) {
             return new TaskView(t.getId(), t.getRepositoryId(), t.getTargetType(), t.getTriggerType(), t.getBaseRef(),
-                    t.getHeadRef(), t.getBaseSha(), t.getHeadSha(), t.getExternalRef(), t.getEffort(), t.getStatus(),
+                    t.getHeadRef(), t.getBaseSha(), t.getHeadSha(), t.getExternalRef(), t.getEffort(),
+                    t.getModelConfigId(), t.getModelName(), t.getStatus(),
                     t.getFilesChanged(), t.getFilesReviewed(), t.getCommentCount(), t.getRoundsCompleted(),
                     t.getInputTokens(), t.getOutputTokens(), t.getSummary(), t.getErrorMessage(), t.getCreatedAt(),
                     t.getStartedAt(), t.getFinishedAt());

@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { modelConfigQueries } from '@/features/model-configs'
+import { type ModelConfig, modelConfigQueries } from '@/features/model-configs'
 import { type Repository, repositoryQueries } from '@/features/repositories'
 import { createTestQueryClient, renderWithProviders } from '@/test/render'
 
@@ -46,11 +46,11 @@ const githubRepo: Repository = {
   externalFullName: 'acme/web',
 }
 
-function renderModal(defaultRepositoryId = localRepo.id) {
+function renderModal(defaultRepositoryId = localRepo.id, models: ModelConfig[] = []) {
   // Seed the option lists so the test does not depend on other features' API modules.
   const queryClient = createTestQueryClient()
   queryClient.setQueryData(repositoryQueries.list().queryKey, [localRepo, githubRepo])
-  queryClient.setQueryData(modelConfigQueries.list().queryKey, [])
+  queryClient.setQueryData(modelConfigQueries.list().queryKey, models)
   return renderWithProviders(
     <CreateReviewModal defaultRepositoryId={defaultRepositoryId} trigger={<button>new</button>} />,
     { queryClient },
@@ -64,6 +64,36 @@ beforeEach(() => {
 })
 
 describe('CreateReviewModal', () => {
+  it('submits the specific model selected from a configuration group', async () => {
+    const user = userEvent.setup()
+    const capabilities = {
+      limit: { context: 1024000, output: 131072 },
+      modalities: { input: ['text'], reasoning_effort: ['low', 'high', 'max'] },
+    }
+    renderModal(localRepo.id, [
+      {
+        id: 7,
+        name: '平台一',
+        baseUrl: 'https://api.example.com/v1',
+        models: { 'glm-5.3': capabilities, 'deepseek-v4.1-flash': capabilities },
+        apiKeyMasked: '****',
+        isDefault: true,
+        createdAt: '2026-10-01T02:00:00Z',
+      },
+    ])
+
+    await user.click(screen.getByRole('button', { name: 'new' }))
+    await user.click(await screen.findByLabelText('模型'))
+    await user.click(await screen.findByText('deepseek-v4.1-flash'))
+    await user.click(confirmButton())
+
+    await waitFor(() =>
+      expect(reviewApi.create).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ modelConfigId: 7, modelName: 'deepseek-v4.1-flash' }),
+      ),
+    )
+  })
+
   it('reviews the working tree of the preselected repository without refs', async () => {
     const user = userEvent.setup()
     renderModal()

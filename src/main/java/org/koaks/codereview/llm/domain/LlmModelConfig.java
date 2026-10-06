@@ -1,6 +1,7 @@
 package org.koaks.codereview.llm.domain;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +16,8 @@ public class LlmModelConfig extends BaseEntity {
     private Long userId;
     private String name;
     private String baseUrl;
-    private String modelName;
+    @TableField("model_names")
+    private String modelNamesJson;
     private String apiKeyCipher;
     private Boolean isDefault;
 

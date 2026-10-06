@@ -117,7 +117,8 @@ public class GitHubWebhookService {
                     text(payload, "pull_request", "head", "ref"), headSha,
                     ReviewEnums.TriggerType.AUTO_EVENT,
                     "github:pr:" + number + ":" + headSha,
-                    rule.getEffort(), rule.getModelConfigId(), text(payload, "pull_request", "body"));
+                    rule.getEffort(), rule.getModelConfigId(), rule.getModelName(),
+                    text(payload, "pull_request", "body"));
             event.setTaskId(task.getId());
             return;
         }
@@ -149,7 +150,7 @@ public class GitHubWebhookService {
             ReviewTask task = reviewTasks.createFromWebhook(repo, number, pr.base().ref(), pr.head().ref(), pr.head().sha(),
                     ReviewEnums.TriggerType.WEBHOOK_COMMAND,
                     "github:comment:" + text(payload, "comment", "id"), effort(command.group(1), rule.getEffort()),
-                    rule.getModelConfigId(), body);
+                    rule.getModelConfigId(), rule.getModelName(), body);
             event.setTaskId(task.getId());
             return;
         }

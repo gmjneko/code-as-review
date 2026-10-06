@@ -149,7 +149,7 @@ public class ReviewTaskRunner {
                 return;
             }
 
-            Model model = modelFactory.create(modelConfigs.resolve(task.getUserId(), task.getModelConfigId()));
+            Model model = modelFactory.create(modelConfigs.resolve(task.getUserId(), task.getModelConfigId(), task.getModelName()));
             Map<String, FileDiff> byPath = new LinkedHashMap<>();
             diffs.stream().filter(d -> !d.binary()).forEach(d -> byPath.put(d.path(), d));
             TaskRuntime rt = new TaskRuntime(task.getId(), task.getUserId(), model, budget, token, byPath,

@@ -72,6 +72,7 @@ export interface CreateReviewRequest {
   effort?: ReviewEffort
   background?: string
   modelConfigId?: number
+  modelName?: string
 }
 
 /** Mirrors `review.task.dto.ReviewDtos.CommentView`. */

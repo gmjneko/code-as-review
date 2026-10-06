@@ -10,7 +10,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Form, Typography } from 'antd'
 import type { ReactElement } from 'react'
 
-import { modelConfigQueries } from '@/features/model-configs'
+import {
+  modelConfigQueries,
+  modelSelectionValue,
+  parseModelSelection,
+} from '@/features/model-configs'
 import { repositoryQueries } from '@/features/repositories'
 import { runAction } from '@/shared/utils'
 
@@ -38,7 +42,7 @@ interface FormValues {
   headRef?: string
   externalRef?: string
   effort?: ReviewEffort
-  modelConfigId?: number
+  modelSelection?: string
   background?: string
 }
 
@@ -72,11 +76,14 @@ function toRequest({
   headRef,
   externalRef,
   background,
+  modelSelection,
   ...values
 }: FormValues): CreateReviewRequest {
   const isRange = values.targetType === 'COMMIT_RANGE'
+  const selected = modelSelection ? parseModelSelection(modelSelection) : undefined
   return {
     ...values,
+    ...(selected ? { modelConfigId: selected.configId, modelName: selected.modelName } : {}),
     baseRef: isRange ? baseRef?.trim() : undefined,
     headRef: isRange ? headRef?.trim() : undefined,
     externalRef: needsExternalRef(values.targetType) ? externalRef?.trim() : undefined,
@@ -175,15 +182,19 @@ function ReviewFormFields() {
         allowClear
         options={EFFORT_OPTIONS}
       />
-      <ProFormSelect<number>
-        name="modelConfigId"
+      <ProFormSelect<string>
+        name="modelSelection"
         label="模型"
         placeholder="使用默认模型"
         allowClear
-        fieldProps={{ loading: modelConfigs.isPending }}
+        showSearch
+        fieldProps={{ loading: modelConfigs.isPending, optionFilterProp: 'label' }}
         options={modelConfigs.data?.map((config) => ({
-          value: config.id,
-          label: `${config.name}（${config.modelName}）${config.isDefault ? ' · 默认' : ''}`,
+          label: config.name,
+          options: Object.keys(config.models).map((modelName) => ({
+            value: modelSelectionValue(config.id, modelName),
+            label: modelName,
+          })),
         }))}
       />
       <ProFormTextArea

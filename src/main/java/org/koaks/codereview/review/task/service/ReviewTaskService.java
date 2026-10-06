@@ -66,6 +66,7 @@ public class ReviewTaskService {
         task.setEffort(request.effort() == null ? defaultEffort : request.effort());
         task.setBackground(request.background());
         task.setModelConfigId(request.modelConfigId());
+        task.setModelName(blankToNull(request.modelName()));
         task.setStatus(TaskStatus.PENDING);
 
         ScmProvider provider = providers.get(repo.getSourceType());
@@ -73,7 +74,7 @@ public class ReviewTaskService {
         if (!provider.supports(target)) {
             throw BizException.badRequest(repo.getSourceType() + " repositories do not support " + request.targetType());
         }
-        modelConfigs.checkUsable(userId, request.modelConfigId());
+        modelConfigs.checkUsable(userId, request.modelConfigId(), task.getModelName());
         Long active = taskMapper.selectCount(Wrappers.<ReviewTask>lambdaQuery()
                 .eq(ReviewTask::getUserId, userId)
                 .in(ReviewTask::getStatus, TaskStatus.PENDING, TaskStatus.RUNNING));
@@ -88,7 +89,8 @@ public class ReviewTaskService {
 
     public ReviewTask createFromWebhook(CodeRepository repo, String externalRef, String baseRef, String headRef,
                                         String headSha, ReviewEnums.TriggerType triggerType, String triggerKey,
-                                        ReviewEnums.Effort effort, Long modelConfigId, String background) {
+                                        ReviewEnums.Effort effort, Long modelConfigId, String modelName,
+                                        String background) {
         ReviewTask existing = taskMapper.selectOne(Wrappers.<ReviewTask>lambdaQuery()
                 .eq(ReviewTask::getRepositoryId, repo.getId())
                 .eq(ReviewTask::getTriggerKey, triggerKey)
@@ -109,12 +111,13 @@ public class ReviewTaskService {
         task.setEffort(effort == null ? defaultEffort : effort);
         task.setBackground(background);
         task.setModelConfigId(modelConfigId);
+        task.setModelName(blankToNull(modelName));
         task.setStatus(TaskStatus.PENDING);
         ScmProvider provider = providers.get(repo.getSourceType());
         if (!provider.supports(ReviewTargets.of(task))) {
             throw BizException.badRequest("repository provider does not support pull request reviews");
         }
-        modelConfigs.checkUsable(repo.getUserId(), modelConfigId);
+        modelConfigs.checkUsable(repo.getUserId(), modelConfigId, task.getModelName());
         Long active = taskMapper.selectCount(Wrappers.<ReviewTask>lambdaQuery()
                 .eq(ReviewTask::getUserId, repo.getUserId())
                 .in(ReviewTask::getStatus, TaskStatus.PENDING, TaskStatus.RUNNING));
@@ -165,6 +168,10 @@ public class ReviewTaskService {
         if (dequeued == 0) {
             runner.cancelRunning(taskId);
         }
+    }
+
+    private static String blankToNull(String value) {
+        return org.springframework.util.StringUtils.hasText(value) ? value.strip() : null;
     }
 
 }

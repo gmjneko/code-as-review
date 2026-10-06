@@ -25,6 +25,7 @@ public class ReviewTask extends BaseEntity {
     private ReviewEnums.Effort effort;
     private String background;
     private Long modelConfigId;
+    private String modelName;
     private ReviewEnums.TaskStatus status;
     private Integer filesChanged;
     private Integer filesReviewed;

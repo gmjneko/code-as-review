@@ -1,7 +1,6 @@
 package org.koaks.codereview.webhook.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -22,7 +21,8 @@ public final class TriggerRuleDtos {
                        @Size(max = 64) String command,
                        Boolean enabled,
                        ReviewEnums.Effort effort,
-                       Long modelConfigId) {
+                       Long modelConfigId,
+                       @Size(max = 128) String modelName) {
         public RepositoryTriggerRule toEntity(long repositoryId) {
             RepositoryTriggerRule rule = new RepositoryTriggerRule();
             rule.setRepositoryId(repositoryId);
@@ -33,6 +33,7 @@ public final class TriggerRuleDtos {
             rule.setEnabled(enabled == null || enabled);
             rule.setEffort(effort == null ? ReviewEnums.Effort.MEDIUM : effort);
             rule.setModelConfigId(modelConfigId);
+            rule.setModelName(modelName == null || modelName.isBlank() ? null : modelName.strip());
             return rule;
         }
     }
@@ -41,10 +42,11 @@ public final class TriggerRuleDtos {
     }
 
     public record View(Long id, WebhookEnums.EventKind eventKind, String action, WebhookEnums.Mode mode,
-                       String command, Boolean enabled, ReviewEnums.Effort effort, Long modelConfigId) {
+                       String command, Boolean enabled, ReviewEnums.Effort effort, Long modelConfigId,
+                       String modelName) {
         public static View of(RepositoryTriggerRule rule) {
             return new View(rule.getId(), rule.getEventKind(), rule.getAction(), rule.getMode(), rule.getCommand(),
-                    rule.getEnabled(), rule.getEffort(), rule.getModelConfigId());
+                    rule.getEnabled(), rule.getEffort(), rule.getModelConfigId(), rule.getModelName());
         }
     }
 }

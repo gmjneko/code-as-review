@@ -36,6 +36,7 @@ export interface WebhookRule {
   enabled: boolean
   effort: 'LOW' | 'MEDIUM' | 'HIGH'
   modelConfigId: number | null
+  modelName: string | null
 }
 
 export interface WebhookConfig {
