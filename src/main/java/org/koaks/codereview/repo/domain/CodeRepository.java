@@ -22,4 +22,5 @@ public class CodeRepository extends BaseEntity {
     private Long credentialId;
     private String webhookSecretCipher;
     private Instant lastSyncedAt;
+
 }

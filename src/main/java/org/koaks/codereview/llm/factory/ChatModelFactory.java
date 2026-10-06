@@ -13,9 +13,12 @@ public class ChatModelFactory {
         OpenAIChatModel.Builder builder = OpenAIChatModel.builder()
                 .apiKey(endpoint.apiKey())
                 .modelName(endpoint.modelName());
+
         if (StringUtils.hasText(endpoint.baseUrl())) {
             builder.baseUrl(endpoint.baseUrl());
         }
+
         return builder.build();
     }
+
 }

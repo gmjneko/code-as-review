@@ -40,4 +40,5 @@ public class BudgetMiddleware implements MiddlewareBase {
             super("token budget exhausted: used " + used + " of " + max);
         }
     }
+
 }

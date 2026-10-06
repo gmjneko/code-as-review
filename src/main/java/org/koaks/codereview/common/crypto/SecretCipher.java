@@ -80,4 +80,5 @@ public class SecretCipher {
         }
         return secret.substring(0, 4) + "****" + secret.substring(secret.length() - 4);
     }
+
 }

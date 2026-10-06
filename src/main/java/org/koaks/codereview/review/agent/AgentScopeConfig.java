@@ -28,4 +28,5 @@ public class AgentScopeConfig {
     public ReviewTools reviewTools() {
         return new ReviewTools();
     }
+
 }

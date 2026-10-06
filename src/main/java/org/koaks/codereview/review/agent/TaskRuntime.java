@@ -25,5 +25,6 @@ public record TaskRuntime(
         String background,
         ReviewEnums.Effort effort,
         Path codeRoot,
-        Path scratchRoot) {
+        Path scratchRoot
+) {
 }

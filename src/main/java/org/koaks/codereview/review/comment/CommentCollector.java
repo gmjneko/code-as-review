@@ -48,4 +48,5 @@ public class CommentCollector {
     public boolean full() {
         return comments.size() >= cap;
     }
+
 }

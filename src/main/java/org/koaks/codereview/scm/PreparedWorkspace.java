@@ -20,4 +20,5 @@ public record PreparedWorkspace(Path codeRoot, String baseSha, String headSha, S
             cleanup.run();
         }
     }
+
 }

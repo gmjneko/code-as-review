@@ -54,4 +54,5 @@ public class ReviewController {
         service.cancel(CurrentUser.id(), id);
         return ApiResponse.ok();
     }
+
 }

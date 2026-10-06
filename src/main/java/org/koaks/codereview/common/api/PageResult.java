@@ -11,4 +11,5 @@ public record PageResult<T>(long page, long size, long total, List<T> records) {
         return new PageResult<>(page.getCurrent(), page.getSize(), page.getTotal(),
                 page.getRecords().stream().map(mapper).toList());
     }
+
 }

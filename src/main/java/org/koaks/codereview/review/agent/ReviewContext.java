@@ -18,5 +18,6 @@ public record ReviewContext(
         Map<String, FileDiff> diffsByPath,
         Set<String> reviewPaths,
         CommentCollector comments,
-        AtomicInteger round) {
+        AtomicInteger round
+) {
 }

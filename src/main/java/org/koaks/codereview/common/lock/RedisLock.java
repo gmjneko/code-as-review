@@ -29,8 +29,8 @@ public class RedisLock implements KeyedLock {
     private final StringRedisTemplate redis;
 
     @Override
-    public <T> T withLock(String key, Supplier<T> action) {
-        return withLock(key, DEFAULT_LEASE, DEFAULT_WAIT, action);
+    public <T> void withLock(String key, Supplier<T> action) {
+        withLock(key, DEFAULT_LEASE, DEFAULT_WAIT, action);
     }
 
     public <T> T withLock(String key, Duration lease, Duration waitAtMost, Supplier<T> action) {
@@ -53,4 +53,5 @@ public class RedisLock implements KeyedLock {
             redis.execute(RELEASE, List.of(key), token);
         }
     }
+
 }

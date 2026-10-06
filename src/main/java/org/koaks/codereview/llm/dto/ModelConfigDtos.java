@@ -31,4 +31,5 @@ public final class ModelConfigDtos {
     public record View(Long id, String name, String baseUrl, String modelName, String apiKeyMasked,
                        boolean isDefault, Instant createdAt) {
     }
+
 }

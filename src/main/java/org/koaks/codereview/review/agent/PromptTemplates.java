@@ -59,4 +59,5 @@ public class PromptTemplates {
             throw new UncheckedIOException(e);
         }
     }
+
 }

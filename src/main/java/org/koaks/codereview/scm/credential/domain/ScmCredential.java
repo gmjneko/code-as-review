@@ -20,4 +20,5 @@ public class ScmCredential extends BaseEntity {
     private String host;
     private String secretCipher;
     private Instant expiresAt;
+
 }

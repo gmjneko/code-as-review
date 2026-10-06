@@ -24,4 +24,5 @@ public class ScmProviderRegistry {
         }
         return provider;
     }
+
 }

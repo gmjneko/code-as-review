@@ -39,4 +39,5 @@ public class StaleTaskRecovery {
             log.info("Recovered review tasks: {} interrupted, {} re-queued", failed, pending.size());
         }
     }
+
 }

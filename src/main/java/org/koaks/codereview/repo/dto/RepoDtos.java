@@ -9,20 +9,27 @@ import org.koaks.codereview.repo.domain.SourceType;
 import java.time.Instant;
 
 public final class RepoDtos {
-
     private RepoDtos() {
     }
 
     public record Create(
-            @NotBlank @Size(max = 128) String name,
-            @NotNull SourceType sourceType,
-            @Size(max = 1024) String localPath,
-            @Size(max = 1024) String remoteUrl,
-            @Size(max = 255) String defaultBranch,
-            Long credentialId) {
+            @NotBlank @Size(max = 128)
+            String name,
+            @NotNull
+            SourceType sourceType,
+            @Size(max = 1024)
+            String localPath,
+            @Size(max = 1024)
+            String remoteUrl,
+            @Size(max = 255)
+            String defaultBranch,
+            Long credentialId
+    ) {
     }
 
-    /** Null fields are left unchanged; a blank {@code defaultBranch} clears it. */
+    /**
+     * Null fields are left unchanged; a blank {@code defaultBranch} clears it.
+     */
     public record Update(@Size(max = 128) String name, @Size(max = 255) String defaultBranch) {
     }
 
@@ -44,4 +51,5 @@ public final class RepoDtos {
                     r.getCreatedAt());
         }
     }
+
 }

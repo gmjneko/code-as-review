@@ -64,4 +64,5 @@ public final class GlobMatcher {
         collectVariants(pattern, at + 3, out);
         collectVariants(pattern.substring(0, at) + pattern.substring(at + 3), at, out);
     }
+
 }

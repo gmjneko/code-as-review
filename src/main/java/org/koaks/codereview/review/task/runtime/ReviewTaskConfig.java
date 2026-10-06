@@ -27,4 +27,5 @@ public class ReviewTaskConfig {
     public FileSelector fileSelector(CodeReviewProperties properties) {
         return FileSelector.fromClasspath(properties.review().maxFileDiffTokens());
     }
+
 }

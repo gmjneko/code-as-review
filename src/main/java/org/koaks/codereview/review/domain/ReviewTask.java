@@ -36,4 +36,5 @@ public class ReviewTask extends BaseEntity {
     private String errorMessage;
     private Instant startedAt;
     private Instant finishedAt;
+
 }

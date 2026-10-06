@@ -33,4 +33,5 @@ public class CandidateComment {
         this.severity = severity;
         this.round = round;
     }
+
 }

@@ -24,7 +24,9 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class LocalGitProvider implements ScmProvider {
 
-    /** git's well-known empty tree, used as the base when a repository has no commits yet. */
+    /**
+     * git's well-known empty tree, used as the base when a repository has no commits yet.
+     */
     static final String EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
     private static final int MAX_UNTRACKED_FILES = 500;
     private static final String[] DIFF_FLAGS = {"--no-color", "--no-ext-diff", "-M"};
@@ -149,4 +151,5 @@ public class LocalGitProvider implements ScmProvider {
         System.arraycopy(rest, 0, out, 1 + middle.length, rest.length);
         return out;
     }
+
 }

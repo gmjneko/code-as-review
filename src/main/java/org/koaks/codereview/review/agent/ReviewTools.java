@@ -19,12 +19,17 @@ public class ReviewTools {
             Set.of("bug", "security", "performance", "maintainability", "test", "style", "documentation", "other");
     static final Set<String> SEVERITIES = Set.of("critical", "high", "medium", "low");
 
-    @Tool(name = "read_file_diff", readOnly = true,
+    @Tool(
+            name = "read_file_diff",
+            readOnly = true,
             description = "Return the unified diff of a file changed in this update. Use it for files listed "
-                    + "without an inline diff and to check how related files changed.")
+                    + "without an inline diff and to check how related files changed."
+    )
     public String readFileDiff(
             ReviewContext ctx,
-            @ToolParam(name = "path", description = "Repository-relative path of a changed file") String path) {
+            @ToolParam(name = "path", description = "Repository-relative path of a changed file")
+            String path
+    ) {
         FileDiff diff = ctx.diffsByPath().get(normalise(path));
         if (diff == null) {
             return "No diff for '" + path + "'. Changed files: " + String.join(", ", ctx.diffsByPath().keySet());
@@ -36,22 +41,30 @@ public class ReviewTools {
                 + ")\n" + diff.hunksText();
     }
 
-    @Tool(name = "code_comment",
+    @Tool(
+            name = "code_comment",
             description = "Report one confirmed code issue in a file under review. The comment is anchored by "
                     + "matching 'existing_code' against the diff, so it must be one or several consecutive lines "
                     + "copied exactly from the added lines of the diff (without the leading '+'). "
-                    + "Call once per issue.")
+                    + "Call once per issue."
+    )
     public String codeComment(
             ReviewContext ctx,
-            @ToolParam(name = "path", description = "Repository-relative path of the file in <review_files>") String path,
-            @ToolParam(name = "content", description = "Brief description of the issue and how to fix it") String content,
+            @ToolParam(name = "path", description = "Repository-relative path of the file in <review_files>")
+            String path,
+            @ToolParam(name = "content", description = "Brief description of the issue and how to fix it")
+            String content,
             @ToolParam(name = "existing_code", description = "Exact newly added code line(s) the comment refers to")
             String existingCode,
             @ToolParam(name = "category", description = "One of: bug, security, performance, maintainability, "
-                    + "test, style, documentation, other") String category,
-            @ToolParam(name = "severity", description = "One of: critical, high, medium, low") String severity,
+                    + "test, style, documentation, other")
+            String category,
+            @ToolParam(name = "severity", description = "One of: critical, high, medium, low")
+            String severity,
             @ToolParam(name = "suggestion_code", required = false,
-                    description = "Suggested replacement code, in the same style") String suggestionCode) {
+                    description = "Suggested replacement code, in the same style")
+            String suggestionCode
+    ) {
         String file = normalise(path);
         if (!ctx.reviewPaths().contains(file)) {
             return "Rejected: '" + path + "' is not in <review_files>. Comment only on: "
@@ -90,4 +103,5 @@ public class ReviewTools {
     private static String blankToNull(String s) {
         return s == null || s.isBlank() ? null : s;
     }
+
 }

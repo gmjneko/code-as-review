@@ -9,4 +9,5 @@ public final class TokenEstimator {
     public static int estimate(String text) {
         return text == null ? 0 : (text.length() + 3) / 4;
     }
+
 }

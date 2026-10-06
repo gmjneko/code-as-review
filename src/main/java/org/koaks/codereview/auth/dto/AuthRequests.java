@@ -25,4 +25,5 @@ public final class AuthRequests {
 
     public record Refresh(@NotBlank String refreshToken) {
     }
+
 }

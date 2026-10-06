@@ -16,4 +16,5 @@ public sealed interface ReviewTarget {
 
     record Issue(String number) implements ReviewTarget {
     }
+
 }

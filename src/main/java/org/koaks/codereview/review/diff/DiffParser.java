@@ -256,4 +256,5 @@ public final class DiffParser {
                     hunksText, additions, deletions);
         }
     }
+
 }

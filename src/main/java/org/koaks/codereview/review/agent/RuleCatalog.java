@@ -74,4 +74,5 @@ public class RuleCatalog {
     private static String load(String name) {
         return PromptTemplates.load("review/rules/" + name + ".md");
     }
+
 }

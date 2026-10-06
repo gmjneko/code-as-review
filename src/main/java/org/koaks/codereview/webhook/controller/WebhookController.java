@@ -26,4 +26,5 @@ public class WebhookController {
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
                 .body(ApiResponse.error("NOT_IMPLEMENTED", "webhooks for " + provider + " are not supported yet"));
     }
+
 }

@@ -45,4 +45,5 @@ public class LlmModelConfigController {
         service.delete(CurrentUser.id(), id);
         return ApiResponse.ok();
     }
+
 }

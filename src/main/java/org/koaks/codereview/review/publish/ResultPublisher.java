@@ -15,4 +15,5 @@ public interface ResultPublisher {
     boolean supports(ReviewTask task);
 
     void publish(ReviewTask task, List<CandidateComment> comments);
+
 }

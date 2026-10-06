@@ -23,4 +23,5 @@ public class ReviewComment extends BaseEntity {
     private ReviewEnums.CommentStatus status;
     private String filterReason;
     private String externalCommentId;
+
 }

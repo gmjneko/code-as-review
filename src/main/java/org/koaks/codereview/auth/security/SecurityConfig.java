@@ -71,4 +71,5 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder(SecretKey jwtSigningKey) {
         return NimbusJwtDecoder.withSecretKey(jwtSigningKey).macAlgorithm(MacAlgorithm.HS256).build();
     }
+
 }

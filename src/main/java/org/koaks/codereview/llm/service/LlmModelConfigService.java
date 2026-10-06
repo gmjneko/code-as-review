@@ -25,17 +25,21 @@ public class LlmModelConfigService {
 
     @Transactional
     public ModelConfigDtos.View create(long userId, ModelConfigDtos.Create request) {
-        LlmModelConfig config = new LlmModelConfig();
-        config.setUserId(userId);
-        config.setName(request.name());
-        config.setBaseUrl(request.baseUrl());
-        config.setModelName(request.modelName());
-        config.setApiKeyCipher(cipher.encrypt(request.apiKey()));
-        config.setIsDefault(request.isDefault());
+        LlmModelConfig config = LlmModelConfig.builder()
+                .userId(userId)
+                .name(request.name())
+                .baseUrl(request.baseUrl())
+                .modelName(request.modelName())
+                .apiKeyCipher(cipher.encrypt(request.apiKey()))
+                .isDefault(request.isDefault())
+                .build();
+
         if (request.isDefault()) {
             clearDefault(userId);
         }
+
         mapper.insert(config);
+
         return view(config);
     }
 
@@ -75,7 +79,9 @@ public class LlmModelConfigService {
         mapper.deleteById(getOwned(userId, id).getId());
     }
 
-    /** Validates that {@code configId}, when given, belongs to the user. */
+    /**
+     * Validates that {@code configId}, when given, belongs to the user.
+     */
     public void checkUsable(long userId, Long configId) {
         if (configId != null) {
             getOwned(userId, configId);
@@ -84,7 +90,9 @@ public class LlmModelConfigService {
         }
     }
 
-    /** Explicit config, else the user's default, else the system default from configuration. */
+    /**
+     * Explicit config, else the user's default, else the system default from configuration.
+     */
     public ModelEndpoint resolve(long userId, Long configId) {
         LlmModelConfig config = configId != null
                 ? getOwned(userId, configId)
@@ -122,4 +130,5 @@ public class LlmModelConfigService {
                 SecretCipher.mask(cipher.decrypt(c.getApiKeyCipher())), Boolean.TRUE.equals(c.getIsDefault()),
                 c.getCreatedAt());
     }
+
 }

@@ -25,4 +25,5 @@ public abstract class BaseEntity {
 
     @TableLogic
     private Integer deleted;
+
 }

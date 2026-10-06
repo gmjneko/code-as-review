@@ -41,8 +41,8 @@ class LocalGitProviderTest {
         git = new GitCli(props);
         KeyedLock lock = new KeyedLock() {
             @Override
-            public synchronized <T> T withLock(String key, Supplier<T> action) {
-                return action.get();
+            public synchronized <T> void withLock(String key, Supplier<T> action) {
+                action.get();
             }
         };
         provider = new LocalGitProvider(git, new LocalPathPolicy(List.of(root)), lock);

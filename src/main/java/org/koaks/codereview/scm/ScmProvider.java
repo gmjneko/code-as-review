@@ -24,4 +24,5 @@ public interface ScmProvider {
      * @param taskDir scratch directory owned by the review task; deleted after the run
      */
     PreparedWorkspace prepare(CodeRepository repository, ReviewTarget target, Path taskDir);
+
 }

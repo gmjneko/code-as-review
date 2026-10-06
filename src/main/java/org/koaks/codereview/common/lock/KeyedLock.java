@@ -4,7 +4,7 @@ import java.util.function.Supplier;
 
 public interface KeyedLock {
 
-    <T> T withLock(String key, Supplier<T> action);
+    <T> void withLock(String key, Supplier<T> action);
 
     default void withLock(String key, Runnable action) {
         withLock(key, () -> {
@@ -12,4 +12,5 @@ public interface KeyedLock {
             return null;
         });
     }
+
 }

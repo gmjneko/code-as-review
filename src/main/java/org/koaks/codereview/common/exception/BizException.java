@@ -30,4 +30,5 @@ public class BizException extends RuntimeException {
     public static BizException unauthorized(String message) {
         return new BizException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
     }
+
 }

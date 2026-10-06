@@ -9,4 +9,5 @@ public record ModelEndpoint(String baseUrl, String apiKey, String modelName) {
     public @NonNull String toString() {
         return "ModelEndpoint[baseUrl=" + baseUrl + ", modelName=" + modelName + "]";
     }
+
 }

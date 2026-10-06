@@ -42,4 +42,5 @@ public record CodeReviewProperties(
 
     public record Security(String jwtSecret, Duration accessTokenTtl, Duration refreshTokenTtl, String credentialKey) {
     }
+
 }
