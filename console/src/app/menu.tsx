@@ -1,4 +1,4 @@
-import { AuditOutlined, RobotOutlined } from '@ant-design/icons'
+import { AuditOutlined, BranchesOutlined, RobotOutlined } from '@ant-design/icons'
 import type { ReactNode } from 'react'
 
 import type { FileRoutesByTo } from '@/routeTree.gen'
@@ -16,6 +16,7 @@ export interface AppMenuItem {
 /** Side menu of the authenticated layout. Page titles and breadcrumbs are derived from it. */
 export const appMenu: AppMenuItem[] = [
   { path: '/reviews', name: '评审任务', icon: <AuditOutlined /> },
+  { path: '/repositories', name: '代码仓库', icon: <BranchesOutlined /> },
   { path: '/model-configs', name: '模型配置', icon: <RobotOutlined /> },
 ]
 
