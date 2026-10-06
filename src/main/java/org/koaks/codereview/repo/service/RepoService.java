@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.common.exception.BizException;
 import org.koaks.codereview.repo.domain.CodeRepository;
+import org.koaks.codereview.repo.domain.SourceType;
 import org.koaks.codereview.repo.mapper.CodeRepositoryMapper;
 import org.koaks.codereview.repo.dto.RepoDtos;
 import org.koaks.codereview.scm.ScmProviderRegistry;
@@ -46,6 +47,13 @@ public class RepoService {
             throw BizException.notFound("repository");
         }
         return repo;
+    }
+
+    public CodeRepository findGithub(String externalFullName) {
+        return mapper.selectOne(Wrappers.<CodeRepository>lambdaQuery()
+                .eq(CodeRepository::getSourceType, SourceType.GITHUB)
+                .eq(CodeRepository::getExternalFullName, externalFullName)
+                .last("LIMIT 1"));
     }
 
     /** A null field is left unchanged; a blank {@code defaultBranch} clears it. */

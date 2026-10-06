@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedCredentialsIndexRouteImport } from './routes/_authenticated/credentials/index'
 import { Route as AuthenticatedModelConfigsIndexRouteImport } from './routes/_authenticated/model-configs/index'
 import { Route as AuthenticatedRepositoriesIndexRouteImport } from './routes/_authenticated/repositories/index'
 import { Route as AuthenticatedReviewsIndexRouteImport } from './routes/_authenticated/reviews/index'
@@ -37,6 +38,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCredentialsIndexRoute =
+  AuthenticatedCredentialsIndexRouteImport.update({
+    id: '/credentials/',
+    path: '/credentials/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedModelConfigsIndexRoute =
   AuthenticatedModelConfigsIndexRouteImport.update({
     id: '/model-configs/',
@@ -67,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
+  '/credentials/': typeof AuthenticatedCredentialsIndexRoute
   '/model-configs/': typeof AuthenticatedModelConfigsIndexRoute
   '/repositories/': typeof AuthenticatedRepositoriesIndexRoute
   '/reviews/': typeof AuthenticatedReviewsIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/': typeof AuthenticatedIndexRoute
   '/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
+  '/credentials': typeof AuthenticatedCredentialsIndexRoute
   '/model-configs': typeof AuthenticatedModelConfigsIndexRoute
   '/repositories': typeof AuthenticatedRepositoriesIndexRoute
   '/reviews': typeof AuthenticatedReviewsIndexRoute
@@ -87,6 +96,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/reviews/$reviewId': typeof AuthenticatedReviewsReviewIdRoute
+  '/_authenticated/credentials/': typeof AuthenticatedCredentialsIndexRoute
   '/_authenticated/model-configs/': typeof AuthenticatedModelConfigsIndexRoute
   '/_authenticated/repositories/': typeof AuthenticatedRepositoriesIndexRoute
   '/_authenticated/reviews/': typeof AuthenticatedReviewsIndexRoute
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reviews/$reviewId'
+    | '/credentials/'
     | '/model-configs/'
     | '/repositories/'
     | '/reviews/'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/'
     | '/reviews/$reviewId'
+    | '/credentials'
     | '/model-configs'
     | '/repositories'
     | '/reviews'
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/_authenticated/'
     | '/_authenticated/reviews/$reviewId'
+    | '/_authenticated/credentials/'
     | '/_authenticated/model-configs/'
     | '/_authenticated/repositories/'
     | '/_authenticated/reviews/'
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/credentials/': {
+      id: '/_authenticated/credentials/'
+      path: '/credentials'
+      fullPath: '/credentials/'
+      preLoaderRoute: typeof AuthenticatedCredentialsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/model-configs/': {
       id: '/_authenticated/model-configs/'
       path: '/model-configs'
@@ -192,6 +212,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedReviewsReviewIdRoute: typeof AuthenticatedReviewsReviewIdRoute
+  AuthenticatedCredentialsIndexRoute: typeof AuthenticatedCredentialsIndexRoute
   AuthenticatedModelConfigsIndexRoute: typeof AuthenticatedModelConfigsIndexRoute
   AuthenticatedRepositoriesIndexRoute: typeof AuthenticatedRepositoriesIndexRoute
   AuthenticatedReviewsIndexRoute: typeof AuthenticatedReviewsIndexRoute
@@ -200,6 +221,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedReviewsReviewIdRoute: AuthenticatedReviewsReviewIdRoute,
+  AuthenticatedCredentialsIndexRoute: AuthenticatedCredentialsIndexRoute,
   AuthenticatedModelConfigsIndexRoute: AuthenticatedModelConfigsIndexRoute,
   AuthenticatedRepositoriesIndexRoute: AuthenticatedRepositoriesIndexRoute,
   AuthenticatedReviewsIndexRoute: AuthenticatedReviewsIndexRoute,

@@ -44,6 +44,10 @@ public class GitCli {
     }
 
     public Result run(Path workDir, String... args) {
+        return run(workDir, Map.of(), args);
+    }
+
+    public Result run(Path workDir, Map<String, String> extraEnvironment, String... args) {
         List<String> command = new ArrayList<>(args.length + 3);
         command.add("git");
         command.add("-c");
@@ -54,6 +58,7 @@ public class GitCli {
         env.put("GIT_TERMINAL_PROMPT", "0");
         env.put("LC_ALL", "C");
         env.put("GIT_OPTIONAL_LOCKS", "0");
+        env.putAll(extraEnvironment);
         Process process;
         try {
             process = pb.start();
@@ -80,6 +85,15 @@ public class GitCli {
 
     public String runChecked(Path workDir, String... args) {
         Result result = run(workDir, args);
+        return checked(args, result);
+    }
+
+    public String runChecked(Path workDir, Map<String, String> environment, String... args) {
+        Result result = run(workDir, environment, args);
+        return checked(args, result);
+    }
+
+    private static String checked(String[] args, Result result) {
         if (!result.ok()) {
             throw new GitException("git " + args[0] + " failed: " + result.stderr().strip());
         }

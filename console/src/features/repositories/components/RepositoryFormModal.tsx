@@ -1,6 +1,14 @@
-import { ModalForm, ProFormDependency, ProFormRadio, ProFormText } from '@ant-design/pro-components'
+import {
+  ModalForm,
+  ProFormDependency,
+  ProFormRadio,
+  ProFormSelect,
+  ProFormText,
+} from '@ant-design/pro-components'
+import { useQuery } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 
+import { credentialQueries } from '@/features/credentials'
 import { runAction } from '@/shared/utils'
 
 import { SOURCE_TYPE_META, SOURCE_TYPES, SUPPORTED_SOURCE_TYPES } from '../constants'
@@ -19,6 +27,7 @@ interface FormValues {
   localPath?: string
   remoteUrl?: string
   defaultBranch?: string
+  credentialId?: number
 }
 
 const SOURCE_TYPE_OPTIONS = SOURCE_TYPES.map((value) => {
@@ -46,12 +55,14 @@ function toCreateRequest(values: FormValues): CreateRepositoryRequest {
     localPath: isLocal ? trimmed(values.localPath) : undefined,
     remoteUrl: isLocal ? undefined : trimmed(values.remoteUrl),
     defaultBranch: trimmed(values.defaultBranch),
+    credentialId: isLocal ? undefined : values.credentialId,
   }
 }
 
 export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProps) {
   const create = useCreateRepository()
   const update = useUpdateRepository()
+  const { data: credentials = [] } = useQuery(credentialQueries.list())
   const isEdit = record !== undefined
 
   const handleFinish = (values: FormValues) =>
@@ -79,6 +90,7 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
               localPath: record.localPath ?? undefined,
               remoteUrl: record.remoteUrl ?? undefined,
               defaultBranch: record.defaultBranch ?? undefined,
+              credentialId: record.credentialId ?? undefined,
             }
           : { sourceType: 'LOCAL' }
       }
@@ -127,6 +139,25 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
               ]}
             />
           )
+        }
+      </ProFormDependency>
+      <ProFormDependency name={['sourceType']}>
+        {({ sourceType }: Partial<FormValues>) =>
+          sourceType === 'GITHUB' ? (
+            <ProFormSelect
+              name="credentialId"
+              label="GitHub 凭据"
+              tooltip="选择凭据管理中已保存的 GitHub PAT"
+              placeholder={credentials.length ? '请选择凭据' : '请先在凭据管理中添加 PAT'}
+              options={credentials.map((credential) => ({
+                value: credential.id,
+                label: `${credential.name} · ${credential.provider} / ${credential.authType} · ${credential.host}`,
+              }))}
+              disabled={isEdit}
+              showSearch
+              rules={[{ required: true, message: '请选择 GitHub 凭据' }]}
+            />
+          ) : null
         }
       </ProFormDependency>
       <ProFormText

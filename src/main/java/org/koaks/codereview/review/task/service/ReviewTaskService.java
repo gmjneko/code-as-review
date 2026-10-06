@@ -86,6 +86,46 @@ public class ReviewTaskService {
         return task;
     }
 
+    public ReviewTask createFromWebhook(CodeRepository repo, String externalRef, String baseRef, String headRef,
+                                        String headSha, ReviewEnums.TriggerType triggerType, String triggerKey,
+                                        ReviewEnums.Effort effort, Long modelConfigId, String background) {
+        ReviewTask existing = taskMapper.selectOne(Wrappers.<ReviewTask>lambdaQuery()
+                .eq(ReviewTask::getRepositoryId, repo.getId())
+                .eq(ReviewTask::getTriggerKey, triggerKey)
+                .last("LIMIT 1"));
+        if (existing != null) {
+            return existing;
+        }
+        ReviewTask task = new ReviewTask();
+        task.setUserId(repo.getUserId());
+        task.setRepositoryId(repo.getId());
+        task.setTargetType(ReviewEnums.TargetType.PULL_REQUEST);
+        task.setTriggerType(triggerType);
+        task.setExternalRef(externalRef);
+        task.setBaseRef(baseRef);
+        task.setHeadRef(headRef);
+        task.setHeadSha(headSha);
+        task.setTriggerKey(triggerKey);
+        task.setEffort(effort == null ? defaultEffort : effort);
+        task.setBackground(background);
+        task.setModelConfigId(modelConfigId);
+        task.setStatus(TaskStatus.PENDING);
+        ScmProvider provider = providers.get(repo.getSourceType());
+        if (!provider.supports(ReviewTargets.of(task))) {
+            throw BizException.badRequest("repository provider does not support pull request reviews");
+        }
+        modelConfigs.checkUsable(repo.getUserId(), modelConfigId);
+        Long active = taskMapper.selectCount(Wrappers.<ReviewTask>lambdaQuery()
+                .eq(ReviewTask::getUserId, repo.getUserId())
+                .in(ReviewTask::getStatus, TaskStatus.PENDING, TaskStatus.RUNNING));
+        if (active >= MAX_ACTIVE_TASKS_PER_USER) {
+            throw BizException.conflict("too many active reviews; wait for one to finish");
+        }
+        taskMapper.insert(task);
+        runner.submit(task.getId());
+        return task;
+    }
+
     public PageResult<ReviewDtos.TaskView> list(long userId, Long repositoryId, long page, long size) {
         Page<ReviewTask> result = taskMapper.selectPage(Page.of(Math.max(page, 1), Math.clamp(size, 1, 100)),
                 Wrappers.<ReviewTask>lambdaQuery()

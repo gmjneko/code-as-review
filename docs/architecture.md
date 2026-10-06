@@ -11,7 +11,7 @@
 | `repo` | 代码仓库登记、归属校验和仓库管理接口 |
 | `llm` | 用户模型配置、默认模型解析和模型实例创建 |
 | `review` | 评审任务编排、Diff 处理、Agent、评论收集和结果发布 |
-| `scm` | Git/SCM Provider、工作区准备和凭据持久化 |
+| `scm` | Git/SCM Provider、工作区准备和凭据持久化；GitHub 使用持久 mirror + 任务 detached worktree |
 | `webhook` | 外部代码托管平台 Webhook 入口 |
 | `common` | 跨业务复用的响应、异常、锁、加密和持久化配置 |
 
@@ -44,4 +44,9 @@ Controller 不直接访问 Mapper。跨模块访问通过对方的 Service 或�
 
 - `/命令` 只需判断评论是否以命令开头，参数可以直接跟在后面，不易误触发；
 
-两者都来自同一类 Webhook 事件（Issue / PR 评论），由 `webhook` 模块解析后创建 `trigger_type = WEBHOOK_COMMAND` 的评审任务。
+两者都来自同一类 Webhook 事件（Issue / PR 评论），由 `webhook` 模块验证签名、按 delivery id 去重并创建任务。PR 评论命令创建
+`trigger_type = WEBHOOK_COMMAND` 的评审任务；Issue 事件在当前阶段写入待处理的 `issue_investigation_task`，等待后续复现执行器。
+
+GitHub 的自动事件默认包括 Pull Request `opened` 和 `synchronize`。事件规则存放在
+`repository_trigger_rule`，可以按仓库关闭或指定 effort/model。Webhook Secret 加密存放在
+`code_repository.webhook_secret_cipher`，GitHub PAT 加密存放在 `scm_credential`。

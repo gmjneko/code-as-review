@@ -26,6 +26,7 @@ public final class ReviewEnums {
 
     public enum TriggerType {
         API,
+        AUTO_EVENT,
         WEBHOOK_COMMAND
     }
 

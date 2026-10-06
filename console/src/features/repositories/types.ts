@@ -27,6 +27,24 @@ export interface CreateRepositoryRequest {
   credentialId?: number
 }
 
+export interface WebhookRule {
+  id: number | null
+  eventKind: 'PULL_REQUEST' | 'ISSUE' | 'PR_COMMENT' | 'ISSUE_COMMENT'
+  action: string
+  mode: 'AUTO' | 'COMMAND'
+  command: string | null
+  enabled: boolean
+  effort: 'LOW' | 'MEDIUM' | 'HIGH'
+  modelConfigId: number | null
+}
+
+export interface WebhookConfig {
+  configured: boolean
+  endpoint: string
+  secret: string | null
+  rules: WebhookRule[]
+}
+
 /**
  * Mirrors `repo.dto.RepoDtos.Update`. A blank or omitted `name` is ignored; an omitted
  * `defaultBranch` is left unchanged, while a blank one clears it (stored as `null`).

@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { repositoryApi } from './api'
-import type { CreateRepositoryRequest, UpdateRepositoryRequest } from './types'
+import type { CreateRepositoryRequest, UpdateRepositoryRequest, WebhookRule } from './types'
 
 export const repositoryKeys = {
   all: ['repositories'] as const,
@@ -13,6 +13,11 @@ export const repositoryQueries = {
     queryOptions({
       queryKey: repositoryKeys.list(),
       queryFn: ({ signal }) => repositoryApi.list(signal),
+    }),
+  webhook: (id: number) =>
+    queryOptions({
+      queryKey: [...repositoryKeys.all, 'webhook', id],
+      queryFn: () => repositoryApi.webhook(id),
     }),
 }
 
@@ -46,5 +51,26 @@ export function useDeleteRepository() {
     mutationFn: (id: number) => repositoryApi.remove(id),
     onSuccess: invalidate,
     meta: { successMessage: '仓库已删除' },
+  })
+}
+
+export function useRotateWebhook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => repositoryApi.rotateWebhook(id),
+    onSuccess: (_, id) =>
+      queryClient.invalidateQueries({ queryKey: [...repositoryKeys.all, 'webhook', id] }),
+    meta: { successMessage: 'Webhook Secret 已生成，请立即复制' },
+  })
+}
+
+export function useReplaceTriggerRules() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, rules }: { id: number; rules: WebhookRule[] }) =>
+      repositoryApi.replaceTriggerRules(id, rules),
+    onSuccess: (_, { id }) =>
+      queryClient.invalidateQueries({ queryKey: [...repositoryKeys.all, 'webhook', id] }),
+    meta: { successMessage: '触发规则已保存' },
   })
 }

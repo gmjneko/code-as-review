@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `scm_credential`
     `provider`      VARCHAR(16)  NOT NULL COMMENT 'GITHUB / GITLAB',
     `auth_type`     VARCHAR(16)  NOT NULL COMMENT 'PAT / GITHUB_APP / OAUTH',
     `host`          VARCHAR(255) NOT NULL COMMENT 'e.g. github.com or a self-hosted GitLab host',
+    `remark`        VARCHAR(500)          DEFAULT NULL,
     `secret_cipher` TEXT         NOT NULL COMMENT 'AES-GCM encrypted token or private key',
     `expires_at`    DATETIME              DEFAULT NULL,
     `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -82,12 +83,13 @@ CREATE TABLE IF NOT EXISTS `review_task`
     `user_id`               BIGINT       NOT NULL,
     `repository_id`         BIGINT       NOT NULL,
     `target_type`           VARCHAR(32)  NOT NULL COMMENT 'LOCAL_WORKING_TREE / COMMIT_RANGE / PULL_REQUEST / ISSUE',
-    `trigger_type`          VARCHAR(32)  NOT NULL COMMENT 'API / WEBHOOK_COMMAND',
+    `trigger_type`          VARCHAR(32)  NOT NULL COMMENT 'API / AUTO_EVENT / WEBHOOK_COMMAND',
     `base_ref`              VARCHAR(255)          DEFAULT NULL,
     `head_ref`              VARCHAR(255)          DEFAULT NULL,
     `base_sha`              VARCHAR(64)           DEFAULT NULL,
     `head_sha`              VARCHAR(64)           DEFAULT NULL,
     `external_ref`          VARCHAR(64)           DEFAULT NULL COMMENT 'PR/MR/Issue number for remote targets',
+    `trigger_key`           VARCHAR(255)          DEFAULT NULL,
     `effort`                VARCHAR(16)  NOT NULL DEFAULT 'MEDIUM' COMMENT 'LOW / MEDIUM / HIGH',
     `background`            TEXT                  DEFAULT NULL COMMENT 'Requirement background supplied by the requester',
     `model_config_id`       BIGINT                DEFAULT NULL COMMENT 'NULL means the system default model',
@@ -109,7 +111,8 @@ CREATE TABLE IF NOT EXISTS `review_task`
     PRIMARY KEY (`id`),
     KEY `idx_user_created` (`user_id`, `created_at`),
     KEY `idx_repository` (`repository_id`),
-    KEY `idx_status` (`status`)
+    KEY `idx_status` (`status`),
+    UNIQUE KEY `uk_review_task_trigger` (`repository_id`, `trigger_key`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='One review run';
 
@@ -151,6 +154,46 @@ CREATE TABLE IF NOT EXISTS `webhook_event`
     `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `deleted`       TINYINT      NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_provider_delivery` (`provider`, `delivery_id`)
+    UNIQUE KEY `uk_provider_delivery` (`provider`, `delivery_id`),
+    KEY `idx_webhook_repository` (`repository_id`, `created_at`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='Inbound webhook deliveries (reserved for GitHub/GitLab)';
+
+CREATE TABLE IF NOT EXISTS `repository_trigger_rule`
+(
+    `id`              BIGINT      NOT NULL AUTO_INCREMENT,
+    `repository_id`   BIGINT      NOT NULL,
+    `event_kind`      VARCHAR(32) NOT NULL COMMENT 'PULL_REQUEST / ISSUE / PR_COMMENT / ISSUE_COMMENT',
+    `action`          VARCHAR(32) NOT NULL,
+    `mode`            VARCHAR(16) NOT NULL COMMENT 'AUTO / COMMAND',
+    `command`         VARCHAR(64)          DEFAULT NULL,
+    `enabled`         TINYINT     NOT NULL DEFAULT 1,
+    `effort`          VARCHAR(16) NOT NULL DEFAULT 'MEDIUM',
+    `model_config_id` BIGINT               DEFAULT NULL,
+    `created_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted`         TINYINT     NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_repository_trigger_rule` (`repository_id`, `event_kind`, `action`, `mode`, `command`),
+    KEY `idx_trigger_repository` (`repository_id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='GitHub review trigger rules';
+
+CREATE TABLE IF NOT EXISTS `issue_investigation_task`
+(
+    `id`               BIGINT      NOT NULL AUTO_INCREMENT,
+    `repository_id`    BIGINT      NOT NULL,
+    `user_id`          BIGINT      NOT NULL,
+    `issue_number`     VARCHAR(64) NOT NULL,
+    `webhook_event_id` BIGINT               DEFAULT NULL,
+    `command`          VARCHAR(64)          DEFAULT NULL,
+    `status`           VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    `error_message`    TEXT                 DEFAULT NULL,
+    `created_at`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `deleted`          TINYINT     NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_issue_investigation_event` (`webhook_event_id`),
+    KEY `idx_issue_task_repository` (`repository_id`, `status`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='Pending Issue investigations';

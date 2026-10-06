@@ -21,6 +21,7 @@ public class ReviewTask extends BaseEntity {
     private String baseSha;
     private String headSha;
     private String externalRef;
+    private String triggerKey;
     private ReviewEnums.Effort effort;
     private String background;
     private Long modelConfigId;

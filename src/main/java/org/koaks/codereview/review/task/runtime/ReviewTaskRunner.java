@@ -159,9 +159,15 @@ public class ReviewTaskRunner {
             ChangeReviewer.Outcome outcome = reviewer.review(rt, selection.reviewable(),
                     (comments, rounds) -> recordFindings(task.getId(), comments, rounds, confirmed, budget));
             token.throwIfCancelled();
+            String publishWarning = null;
             for (ResultPublisher publisher : publishers) {
-                if (publisher.supports(task)) {
-                    publisher.publish(task, outcome.comments());
+                try {
+                    if (publisher.supports(task)) {
+                        publisher.publish(task, outcome.comments());
+                    }
+                } catch (RuntimeException e) {
+                    publishWarning = "result publishing failed: " + rootMessage(e);
+                    log.warn("Task {} could not publish review results", task.getId(), e);
                 }
             }
 
@@ -172,7 +178,8 @@ public class ReviewTaskRunner {
             done.setSummary(outcome.summary());
             done.setCommentCount((int) countConfirmed(outcome.comments()));
             taskMapper.updateById(done);
-            String message = outcome.failure() != null ? outcome.failure() : outcome.warning();
+            String message = outcome.failure() != null ? outcome.failure()
+                    : publishWarning != null ? publishWarning : outcome.warning();
             finish(task.getId(), outcome.failure() != null ? TaskStatus.FAILED : TaskStatus.SUCCEEDED, message, budget);
         }
     }
@@ -213,6 +220,14 @@ public class ReviewTaskRunner {
 
     static long countConfirmed(List<CandidateComment> comments) {
         return comments.stream().filter(c -> c.getStatus() != ReviewEnums.CommentStatus.FILTERED).count();
+    }
+
+    private static String rootMessage(Throwable error) {
+        Throwable current = error;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
     }
 
     private static void deleteQuietly(Path dir) {

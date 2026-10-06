@@ -7,6 +7,7 @@ import { Button, Popconfirm, Tag, Typography } from 'antd'
 import { runAction } from '@/shared/utils'
 
 import { RepositoryFormModal } from '../components/RepositoryFormModal'
+import { WebhookConfigModal } from '../components/WebhookConfigModal'
 import { SOURCE_TYPE_META } from '../constants'
 import { repositoryQueries, useDeleteRepository } from '../queries'
 import type { Repository } from '../types'
@@ -58,6 +59,9 @@ export function RepositoryListPage() {
         <Link key="reviews" to="/reviews" search={{ repositoryId: repo.id }}>
           评审记录
         </Link>,
+        ...(repo.sourceType === 'GITHUB'
+          ? [<WebhookConfigModal key="webhook" repository={repo} />]
+          : []),
         <RepositoryFormModal
           key="edit"
           record={repo}
@@ -83,7 +87,7 @@ export function RepositoryListPage() {
   ]
 
   return (
-    <PageContainer content="登记需要评审的代码仓库。目前支持服务器本地的 Git 仓库，GitHub / GitLab 即将支持。">
+    <PageContainer content="登记需要评审的代码仓库，并为 GitHub 仓库配置 Webhook 和自动触发规则。">
       <ProTable<Repository>
         rowKey="id"
         headerTitle="仓库列表"

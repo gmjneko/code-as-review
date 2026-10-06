@@ -25,14 +25,13 @@ public class LlmModelConfigService {
 
     @Transactional
     public ModelConfigDtos.View create(long userId, ModelConfigDtos.Create request) {
-        LlmModelConfig config = LlmModelConfig.builder()
-                .userId(userId)
-                .name(request.name())
-                .baseUrl(request.baseUrl())
-                .modelName(request.modelName())
-                .apiKeyCipher(cipher.encrypt(request.apiKey()))
-                .isDefault(request.isDefault())
-                .build();
+        LlmModelConfig config = new LlmModelConfig();
+        config.setUserId(userId);
+        config.setName(request.name());
+        config.setBaseUrl(request.baseUrl());
+        config.setModelName(request.modelName());
+        config.setApiKeyCipher(cipher.encrypt(request.apiKey()));
+        config.setIsDefault(request.isDefault());
 
         if (request.isDefault()) {
             clearDefault(userId);
