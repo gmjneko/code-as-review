@@ -62,6 +62,7 @@ public class ReviewTaskService {
         task.setTriggerType(ReviewEnums.TriggerType.API);
         task.setBaseRef(request.baseRef());
         task.setHeadRef(request.headRef());
+        task.setExternalRef(request.externalRef());
         task.setEffort(request.effort() == null ? defaultEffort : request.effort());
         task.setBackground(request.background());
         task.setModelConfigId(request.modelConfigId());

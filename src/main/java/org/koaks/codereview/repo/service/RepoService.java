@@ -10,6 +10,7 @@ import org.koaks.codereview.scm.ScmProviderRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -26,7 +27,7 @@ public class RepoService {
         repo.setSourceType(request.sourceType());
         repo.setLocalPath(request.localPath());
         repo.setRemoteUrl(request.remoteUrl());
-        repo.setDefaultBranch(request.defaultBranch());
+        repo.setDefaultBranch(blankToNull(request.defaultBranch()));
         repo.setCredentialId(request.credentialId());
         providers.get(request.sourceType()).validate(repo);
         mapper.insert(repo);
@@ -47,19 +48,29 @@ public class RepoService {
         return repo;
     }
 
+    /** A null field is left unchanged; a blank {@code defaultBranch} clears it. */
     public CodeRepository update(long userId, long id, RepoDtos.Update request) {
         CodeRepository repo = getOwned(userId, id);
         if (StringUtils.hasText(request.name())) {
             repo.setName(request.name());
         }
         if (request.defaultBranch() != null) {
-            repo.setDefaultBranch(request.defaultBranch());
+            repo.setDefaultBranch(blankToNull(request.defaultBranch()));
         }
-        mapper.updateById(repo);
+        // updateById skips null columns, which would make a cleared branch impossible to store.
+        mapper.update(Wrappers.<CodeRepository>lambdaUpdate()
+                .eq(CodeRepository::getId, repo.getId())
+                .set(CodeRepository::getName, repo.getName())
+                .set(CodeRepository::getDefaultBranch, repo.getDefaultBranch())
+                .set(CodeRepository::getUpdatedAt, Instant.now()));
         return repo;
     }
 
     public void delete(long userId, long id) {
         mapper.deleteById(getOwned(userId, id).getId());
+    }
+
+    private static String blankToNull(String value) {
+        return StringUtils.hasText(value) ? value.strip() : null;
     }
 }

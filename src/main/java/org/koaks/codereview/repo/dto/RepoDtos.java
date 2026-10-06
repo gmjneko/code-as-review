@@ -22,6 +22,7 @@ public final class RepoDtos {
             Long credentialId) {
     }
 
+    /** Null fields are left unchanged; a blank {@code defaultBranch} clears it. */
     public record Update(@Size(max = 128) String name, @Size(max = 255) String defaultBranch) {
     }
 

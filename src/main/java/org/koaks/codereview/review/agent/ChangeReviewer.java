@@ -66,7 +66,23 @@ public class ChangeReviewer {
                           String failure, String warning) {
     }
 
+    /** Receives findings as soon as they are final, so they can be stored while the review runs. */
+    @FunctionalInterface
+    public interface FindingsListener {
+
+        /**
+         * @param comments        findings not reported before, with their filter verdict and line numbers
+         * @param roundsCompleted rounds finished so far
+         */
+        void onFindings(List<CandidateComment> comments, int roundsCompleted);
+    }
+
     public Outcome review(TaskRuntime rt, List<FileDiff> files) {
+        return review(rt, files, (comments, rounds) -> {
+        });
+    }
+
+    public Outcome review(TaskRuntime rt, List<FileDiff> files, FindingsListener listener) {
         List<MiddlewareBase> middlewares = List.of(new BudgetMiddleware(rt.budget()));
         CommentCollector collector = new CommentCollector(limits.maxComments());
         Set<String> reviewPaths = new LinkedHashSet<>();
@@ -88,6 +104,7 @@ public class ChangeReviewer {
         String summary = null;
         String stopReason = null;
         int rounds = 0;
+        int reported = 0;
         for (int round = 1; round <= rt.effort().rounds(); round++) {
             rt.cancellation().throwIfCancelled();
             if (round > 1 && rt.budget().exceeded()) {
@@ -110,22 +127,34 @@ public class ChangeReviewer {
             }
             rounds = round;
 
-            List<CandidateComment> kept = filter(rt, round, middlewares, collector.since(baseline));
+            List<CandidateComment> fresh = collector.since(baseline);
+            List<CandidateComment> kept = filter(rt, round, middlewares, fresh);
             confirmed.addAll(kept);
+            report(rt, fresh, rounds, listener);
+            reported = collector.size();
             if (kept.isEmpty() || collector.full()) {
                 break;
             }
         }
+        // A round that failed midway may have recorded findings that were never fact-checked.
+        report(rt, collector.since(reported), rounds, listener);
 
-        for (CandidateComment c : collector.all()) {
+        return rounds == 0
+                ? new Outcome(collector.all(), 0, plan, summary, stopReason, null)
+                : new Outcome(collector.all(), rounds, plan, summary, null, stopReason);
+    }
+
+    private static void report(TaskRuntime rt, List<CandidateComment> comments, int rounds, FindingsListener listener) {
+        if (comments.isEmpty()) {
+            return;
+        }
+        for (CandidateComment c : comments) {
             LineRelocator.locate(rt.diffsByPath().get(c.getPath()), c.getExistingCode()).ifPresent(r -> {
                 c.setStartLine(r.startLine());
                 c.setEndLine(r.endLine());
             });
         }
-        return rounds == 0
-                ? new Outcome(collector.all(), 0, plan, summary, stopReason, null)
-                : new Outcome(collector.all(), rounds, plan, summary, null, stopReason);
+        listener.onFindings(comments, rounds);
     }
 
     private String plan(TaskRuntime rt, List<MiddlewareBase> middlewares, Map<String, String> vars) {

@@ -22,6 +22,7 @@ import org.koaks.codereview.review.domain.ReviewEnums.TaskStatus;
 import org.koaks.codereview.review.domain.ReviewTask;
 import org.koaks.codereview.review.mapper.ReviewTaskMapper;
 import org.koaks.codereview.review.publish.ResultPublisher;
+import org.koaks.codereview.review.publish.ReviewCommentStore;
 import org.koaks.codereview.review.task.ReviewTargets;
 import org.koaks.codereview.scm.PreparedWorkspace;
 import org.koaks.codereview.scm.ScmProviderRegistry;
@@ -39,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /** Executes review tasks on the bounded review executor, one agent session per task. */
@@ -52,6 +54,7 @@ public class ReviewTaskRunner {
     private final LlmModelConfigService modelConfigs;
     private final ChatModelFactory modelFactory;
     private final ChangeReviewer reviewer;
+    private final ReviewCommentStore commentStore;
     private final List<ResultPublisher> publishers;
     private final FileSelector fileSelector;
     private final CodeReviewProperties properties;
@@ -60,7 +63,8 @@ public class ReviewTaskRunner {
 
     public ReviewTaskRunner(ReviewTaskMapper taskMapper, RepoService repoService,
                             ScmProviderRegistry providers, LlmModelConfigService modelConfigs,
-                            ChatModelFactory modelFactory, ChangeReviewer reviewer, List<ResultPublisher> publishers,
+                            ChatModelFactory modelFactory, ChangeReviewer reviewer, ReviewCommentStore commentStore,
+                            List<ResultPublisher> publishers,
                             FileSelector fileSelector, CodeReviewProperties properties,
                             @Qualifier(ReviewTaskConfig.EXECUTOR) TaskExecutor executor) {
         this.taskMapper = taskMapper;
@@ -69,6 +73,7 @@ public class ReviewTaskRunner {
         this.modelConfigs = modelConfigs;
         this.modelFactory = modelFactory;
         this.reviewer = reviewer;
+        this.commentStore = commentStore;
         this.publishers = publishers;
         this.fileSelector = fileSelector;
         this.properties = properties;
@@ -150,7 +155,9 @@ public class ReviewTaskRunner {
             TaskRuntime rt = new TaskRuntime(task.getId(), task.getUserId(), model, budget, token, byPath,
                     selection.context(), task.getBackground(), task.getEffort(), ws.codeRoot(), scratch);
 
-            ChangeReviewer.Outcome outcome = reviewer.review(rt, selection.reviewable());
+            AtomicInteger confirmed = new AtomicInteger();
+            ChangeReviewer.Outcome outcome = reviewer.review(rt, selection.reviewable(),
+                    (comments, rounds) -> recordFindings(task.getId(), comments, rounds, confirmed, budget));
             token.throwIfCancelled();
             for (ResultPublisher publisher : publishers) {
                 if (publisher.supports(task)) {
@@ -168,6 +175,19 @@ public class ReviewTaskRunner {
             String message = outcome.failure() != null ? outcome.failure() : outcome.warning();
             finish(task.getId(), outcome.failure() != null ? TaskStatus.FAILED : TaskStatus.SUCCEEDED, message, budget);
         }
+    }
+
+    /** Stores a settled batch of findings and the progress counters, so the console sees them live. */
+    private void recordFindings(long taskId, List<CandidateComment> comments, int rounds, AtomicInteger confirmed,
+                                TaskBudget budget) {
+        commentStore.save(taskId, comments);
+        ReviewTask progress = new ReviewTask();
+        progress.setId(taskId);
+        progress.setRoundsCompleted(rounds);
+        progress.setCommentCount(confirmed.addAndGet((int) countConfirmed(comments)));
+        progress.setInputTokens(budget.inputTokens());
+        progress.setOutputTokens(budget.outputTokens());
+        taskMapper.updateById(progress);
     }
 
     private void completeWithSummary(long taskId, String summary, TaskBudget budget) {

@@ -1,6 +1,7 @@
 package org.koaks.codereview.review.task.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.koaks.codereview.review.domain.ReviewComment;
 import org.koaks.codereview.review.domain.ReviewEnums;
@@ -14,14 +15,16 @@ public final class ReviewDtos {
     }
 
     /**
-     * @param baseRef required for {@code COMMIT_RANGE}: the branch or commit the change is based on
-     * @param headRef required for {@code COMMIT_RANGE}: the branch or commit under review
+     * @param baseRef     required for {@code COMMIT_RANGE}: the branch or commit the change is based on
+     * @param headRef     required for {@code COMMIT_RANGE}: the branch or commit under review
+     * @param externalRef required for {@code PULL_REQUEST} / {@code ISSUE}: the PR/MR or issue number
      */
     public record Create(
             @NotNull Long repositoryId,
             @NotNull ReviewEnums.TargetType targetType,
             @Size(max = 255) String baseRef,
             @Size(max = 255) String headRef,
+            @Pattern(regexp = "^[1-9][0-9]{0,18}$", message = "must be a positive number") String externalRef,
             ReviewEnums.Effort effort,
             @Size(max = 8000) String background,
             Long modelConfigId) {
@@ -36,6 +39,7 @@ public final class ReviewDtos {
             String headRef,
             String baseSha,
             String headSha,
+            String externalRef,
             ReviewEnums.Effort effort,
             ReviewEnums.TaskStatus status,
             Integer filesChanged,
@@ -52,10 +56,10 @@ public final class ReviewDtos {
 
         public static TaskView of(ReviewTask t) {
             return new TaskView(t.getId(), t.getRepositoryId(), t.getTargetType(), t.getTriggerType(), t.getBaseRef(),
-                    t.getHeadRef(), t.getBaseSha(), t.getHeadSha(), t.getEffort(), t.getStatus(), t.getFilesChanged(),
-                    t.getFilesReviewed(), t.getCommentCount(), t.getRoundsCompleted(), t.getInputTokens(),
-                    t.getOutputTokens(), t.getSummary(), t.getErrorMessage(), t.getCreatedAt(), t.getStartedAt(),
-                    t.getFinishedAt());
+                    t.getHeadRef(), t.getBaseSha(), t.getHeadSha(), t.getExternalRef(), t.getEffort(), t.getStatus(),
+                    t.getFilesChanged(), t.getFilesReviewed(), t.getCommentCount(), t.getRoundsCompleted(),
+                    t.getInputTokens(), t.getOutputTokens(), t.getSummary(), t.getErrorMessage(), t.getCreatedAt(),
+                    t.getStartedAt(), t.getFinishedAt());
         }
     }
 

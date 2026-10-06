@@ -14,6 +14,7 @@ import org.koaks.codereview.review.domain.ReviewEnums;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +107,25 @@ class ChangeReviewerTest {
         assertThat(secondRound.allText()).contains("Possible division by zero").contains("Review Plan\n(none)")
                 .doesNotContain("Field is never used");
         assertThat(budget.total()).isPositive();
+    }
+
+    @Test
+    void reportsEachRoundsFindingsOnceTheyAreFactChecked() {
+        ScriptedModel model = new ScriptedModel(this::reviewScript);
+        List<List<String>> batches = new ArrayList<>();
+        List<Integer> rounds = new ArrayList<>();
+
+        ChangeReviewer.Outcome outcome = reviewer.review(runtime(model, new TaskBudget(0), new CancellationToken()),
+                List.of(diffs.getFirst()), (comments, completed) -> {
+                    assertThat(comments).allSatisfy(c -> assertThat(c.getStatus()).isNotNull());
+                    batches.add(comments.stream().map(c -> c.getId() + "@" + c.getStartLine()).toList());
+                    rounds.add(completed);
+                });
+
+        // Round 2 adds nothing, so only round 1 reports; every finding is reported exactly once.
+        assertThat(batches).containsExactly(List.of("c-0@2", "c-1@3"));
+        assertThat(rounds).containsExactly(1);
+        assertThat(outcome.comments()).hasSize(2);
     }
 
     @Test
