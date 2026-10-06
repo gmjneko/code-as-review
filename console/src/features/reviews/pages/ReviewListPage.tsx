@@ -103,6 +103,8 @@ export function ReviewListPage() {
       title: '操作',
       valueType: 'option',
       width: 120,
+      align: 'center',
+      fixed: 'right',
       render: (_, task) => [
         <Link key="view" to="/reviews/$reviewId" params={{ reviewId: task.id }}>
           详情
