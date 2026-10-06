@@ -29,6 +29,27 @@ export const REVIEW_EFFORT_LABELS: Record<ReviewEffort, string> = {
   HIGH: '高',
 }
 
+/** Mirrors `ReviewEnums.Effort#rounds`. */
+export const REVIEW_EFFORT_ROUNDS: Record<ReviewEffort, number> = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+}
+
+export const REVIEW_EFFORTS: readonly ReviewEffort[] = ['LOW', 'MEDIUM', 'HIGH']
+
+/**
+ * Targets that can be requested from the console. PR / issue reviews need an external reference
+ * that `ReviewDtos.Create` does not accept yet; they will come with webhook support.
+ */
+export const CREATABLE_TARGET_TYPES: readonly ReviewTargetType[] = [
+  'LOCAL_WORKING_TREE',
+  'COMMIT_RANGE',
+]
+
+/** Mirrors `scm.git.GitCli#requireSafeRef`. */
+export const SAFE_GIT_REF = /^[A-Za-z0-9][A-Za-z0-9._/@{}^~-]{0,254}$/
+
 /** Mirrors `ReviewEnums.TaskStatus#terminal`. */
 export function isTerminalStatus(status: ReviewTaskStatus): boolean {
   return status === 'SUCCEEDED' || status === 'FAILED' || status === 'CANCELLED'

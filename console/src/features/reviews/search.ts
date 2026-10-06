@@ -15,4 +15,5 @@ export const reviewListSearchSchema = z.object({
     .max(100)
     .default(REVIEW_LIST_DEFAULTS.size)
     .catch(REVIEW_LIST_DEFAULTS.size),
+  repositoryId: z.number().int().positive().optional().catch(undefined),
 })

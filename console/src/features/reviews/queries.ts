@@ -2,7 +2,7 @@ import { keepPreviousData, queryOptions, useMutation, useQueryClient } from '@ta
 
 import { reviewApi } from './api'
 import { ACTIVE_TASK_POLL_INTERVAL_MS, isTerminalStatus } from './constants'
-import type { ReviewListParams } from './types'
+import type { CreateReviewRequest, ReviewListParams } from './types'
 
 export const reviewKeys = {
   all: ['reviews'] as const,
@@ -24,10 +24,19 @@ export const reviewQueries = {
     }),
 }
 
+export function useCreateReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateReviewRequest) => reviewApi.create(body),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: reviewKeys.all }),
+    meta: { successMessage: '评审任务已创建' },
+  })
+}
+
 export function useCancelReview() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: reviewApi.cancel,
+    mutationFn: (id: number) => reviewApi.cancel(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: reviewKeys.all }),
     meta: { successMessage: '已提交取消请求' },
   })

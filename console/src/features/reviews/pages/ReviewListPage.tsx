@@ -1,10 +1,13 @@
+import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { Button, Popconfirm, Typography } from 'antd'
+import { Button, Popconfirm, Select, Typography } from 'antd'
 
+import { repositoryQueries } from '@/features/repositories'
 import { formatDuration, formatInteger, runAction } from '@/shared/utils'
 
+import { CreateReviewModal } from '../components/CreateReviewModal'
 import {
   isTerminalStatus,
   REVIEW_EFFORT_LABELS,
@@ -30,6 +33,9 @@ export function ReviewListPage() {
     // A failed first load goes to the route error boundary; later failures are toasted.
     throwOnError: (_, query) => query.state.data === undefined,
   })
+  // Only used to label rows and the filter; the table renders fine before it arrives.
+  const repositories = useQuery(repositoryQueries.list())
+  const repositoryNames = new Map(repositories.data?.map((repo) => [repo.id, repo.name]))
   const cancel = useCancelReview()
 
   const columns: ProColumns<ReviewTask>[] = [
@@ -37,8 +43,9 @@ export function ReviewListPage() {
     {
       title: '仓库',
       dataIndex: 'repositoryId',
-      width: 100,
-      render: (_, task) => `#${task.repositoryId}`,
+      width: 160,
+      ellipsis: true,
+      render: (_, task) => repositoryNames.get(task.repositoryId) ?? `#${task.repositoryId}`,
     },
     {
       title: '评审对象',
@@ -114,6 +121,33 @@ export function ReviewListPage() {
         loading={isFetching}
         search={false}
         options={{ reload: () => void refetch(), density: false, setting: false }}
+        headerTitle={
+          <Select<number>
+            aria-label="按仓库筛选"
+            placeholder="全部仓库"
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            style={{ width: 220 }}
+            loading={repositories.isPending}
+            value={search.repositoryId}
+            options={repositories.data?.map((repo) => ({ value: repo.id, label: repo.name }))}
+            onChange={(repositoryId) =>
+              void navigate({ search: (prev) => ({ ...prev, page: 1, repositoryId }) })
+            }
+          />
+        }
+        toolBarRender={() => [
+          <CreateReviewModal
+            key="create"
+            defaultRepositoryId={search.repositoryId}
+            trigger={
+              <Button type="primary" icon={<PlusOutlined />}>
+                新建评审
+              </Button>
+            }
+          />,
+        ]}
         expandable={{
           rowExpandable: (task) => Boolean(task.summary || task.errorMessage),
           expandedRowRender: (task) => (

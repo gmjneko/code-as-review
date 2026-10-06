@@ -29,3 +29,10 @@ window.getComputedStyle = (element) => getComputedStyle(element)
 // Note: jsdom prints "Could not parse CSS stylesheet" for some of antd's CSS-in-JS output. It is
 // written straight to stderr (not through console), is harmless for DOM-level tests, and is
 // expected when rendering antd components.
+
+// antd's Select / TextArea autosize observe their size; jsdom has no layout, so a no-op suffices.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}

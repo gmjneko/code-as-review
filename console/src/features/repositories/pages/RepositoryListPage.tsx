@@ -1,6 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { Button, Popconfirm, Tag, Typography } from 'antd'
 
 import { runAction } from '@/shared/utils'
@@ -52,8 +53,11 @@ export function RepositoryListPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 140,
+      width: 200,
       render: (_, repo) => [
+        <Link key="reviews" to="/reviews" search={{ repositoryId: repo.id }}>
+          评审记录
+        </Link>,
         <RepositoryFormModal
           key="edit"
           record={repo}

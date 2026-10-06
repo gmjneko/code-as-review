@@ -39,4 +39,20 @@ export interface ReviewTask {
 export interface ReviewListParams {
   page: number
   size: number
+  repositoryId?: number
+}
+
+/**
+ * Mirrors `review.task.dto.ReviewDtos.Create`. `baseRef` / `headRef` are required for
+ * `COMMIT_RANGE`; omitted `effort` / `modelConfigId` fall back to the server default and the
+ * user's default model.
+ */
+export interface CreateReviewRequest {
+  repositoryId: number
+  targetType: ReviewTargetType
+  baseRef?: string
+  headRef?: string
+  effort?: ReviewEffort
+  background?: string
+  modelConfigId?: number
 }
