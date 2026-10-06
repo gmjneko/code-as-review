@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons'
 import { PageContainer, ProTable, type ProColumns } from '@ant-design/pro-components'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Button, Popconfirm, Tag, Typography } from 'antd'
+import { Button, Popconfirm, Space, Tag, Typography } from 'antd'
 
 import { runAction } from '@/shared/utils'
 
@@ -18,7 +18,7 @@ export function RepositoryListPage() {
   const remove = useDeleteRepository()
 
   const columns: ProColumns<Repository>[] = [
-    { title: '名称', dataIndex: 'name' },
+    { title: '名称', dataIndex: 'name', width: 180 },
     {
       title: '来源',
       dataIndex: 'sourceType',
@@ -32,6 +32,7 @@ export function RepositoryListPage() {
     {
       title: '位置',
       key: 'location',
+      width: 420,
       ellipsis: true,
       render: (_, repo) => {
         const location = repo.localPath ?? repo.remoteUrl ?? repo.externalFullName
@@ -54,35 +55,33 @@ export function RepositoryListPage() {
     {
       title: '操作',
       valueType: 'option',
-      width: 200,
-      render: (_, repo) => [
-        <Link key="reviews" to="/reviews" search={{ repositoryId: repo.id }}>
-          评审记录
-        </Link>,
-        ...(repo.sourceType === 'GITHUB'
-          ? [<WebhookConfigModal key="webhook" repository={repo} />]
-          : []),
-        <RepositoryFormModal
-          key="edit"
-          record={repo}
-          trigger={
-            <Button type="link" size="small">
-              编辑
+      width: 280,
+      render: (_, repo) => (
+        <Space size={8} wrap={false}>
+          <Link to="/reviews" search={{ repositoryId: repo.id }} style={{ whiteSpace: 'nowrap' }}>
+            评审记录
+          </Link>
+          {repo.sourceType === 'GITHUB' && <WebhookConfigModal repository={repo} />}
+          <RepositoryFormModal
+            record={repo}
+            trigger={
+              <Button type="link" size="small">
+                编辑
+              </Button>
+            }
+          />
+          <Popconfirm
+            title="删除仓库"
+            description={`确定删除「${repo.name}」吗？`}
+            okButtonProps={{ danger: true }}
+            onConfirm={() => runAction(() => remove.mutateAsync(repo.id))}
+          >
+            <Button type="link" size="small" danger>
+              删除
             </Button>
-          }
-        />,
-        <Popconfirm
-          key="delete"
-          title="删除仓库"
-          description={`确定删除「${repo.name}」吗？`}
-          okButtonProps={{ danger: true }}
-          onConfirm={() => runAction(() => remove.mutateAsync(repo.id))}
-        >
-          <Button type="link" size="small" danger>
-            删除
-          </Button>
-        </Popconfirm>,
-      ],
+          </Popconfirm>
+        </Space>
+      ),
     },
   ]
 
@@ -92,6 +91,7 @@ export function RepositoryListPage() {
         rowKey="id"
         headerTitle="仓库列表"
         columns={columns}
+        scroll={{ x: 'max-content' }}
         dataSource={data}
         loading={isFetching}
         search={false}
