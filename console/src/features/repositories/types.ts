@@ -29,7 +29,7 @@ export interface CreateRepositoryRequest {
 
 /**
  * Mirrors `repo.dto.RepoDtos.Update`. A blank or omitted `name` is ignored; an omitted
- * `defaultBranch` is left unchanged, while an empty string clears it.
+ * `defaultBranch` is left unchanged, while a blank one clears it (stored as `null`).
  */
 export interface UpdateRepositoryRequest {
   name?: string

@@ -22,6 +22,7 @@ const routeApi = getRouteApi('/_authenticated/reviews/')
 
 function describeTarget(task: ReviewTask): string {
   const label = REVIEW_TARGET_LABELS[task.targetType]
+  if (task.externalRef) return `${label} #${task.externalRef}`
   return task.baseRef && task.headRef ? `${label} ${task.baseRef}...${task.headRef}` : label
 }
 

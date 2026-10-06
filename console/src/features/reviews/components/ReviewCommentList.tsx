@@ -6,13 +6,20 @@ import { ReviewCommentCard } from './ReviewCommentCard'
 
 interface ReviewCommentListProps {
   comments: ReviewComment[]
+  /** The review is still running, so an empty list is not the final answer yet. */
+  running?: boolean
 }
 
-export function ReviewCommentList({ comments }: ReviewCommentListProps) {
+export function ReviewCommentList({ comments, running = false }: ReviewCommentListProps) {
   const { token } = theme.useToken()
 
   if (comments.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有发现需要关注的问题" />
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={running ? '暂无意见' : '没有发现需要关注的问题'}
+      />
+    )
   }
 
   const groups = groupByFile(comments)

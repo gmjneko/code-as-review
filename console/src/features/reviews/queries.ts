@@ -2,7 +2,7 @@ import { keepPreviousData, queryOptions, useMutation, useQueryClient } from '@ta
 
 import { reviewApi } from './api'
 import { ACTIVE_TASK_POLL_INTERVAL_MS, isTerminalStatus } from './constants'
-import type { CreateReviewRequest, ReviewListParams } from './types'
+import type { CreateReviewRequest, ReviewListParams, ReviewTaskStatus } from './types'
 
 export const reviewKeys = {
   all: ['reviews'] as const,
@@ -35,13 +35,14 @@ export const reviewQueries = {
           : false,
     }),
   /**
-   * Comments are written in one go when the review finishes, so callers should only enable this
-   * for a task in a terminal status; the first fetch then already returns the complete set.
+   * Comments are stored as each review round finishes, so they keep growing while the task runs.
+   * Pass the task's status to poll until it is terminal.
    */
-  comments: (id: number, includeFiltered: boolean) =>
+  comments: (id: number, includeFiltered: boolean, taskStatus: ReviewTaskStatus) =>
     queryOptions({
       queryKey: reviewKeys.comments(id, includeFiltered),
       queryFn: ({ signal }) => reviewApi.comments(id, includeFiltered, signal),
+      refetchInterval: isTerminalStatus(taskStatus) ? false : ACTIVE_TASK_POLL_INTERVAL_MS,
     }),
 }
 

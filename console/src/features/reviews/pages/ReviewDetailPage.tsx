@@ -51,7 +51,13 @@ function describeTask(
 ): DescriptionsProps['items'] {
   return [
     { key: 'repository', label: '仓库', children: repositoryName ?? `#${task.repositoryId}` },
-    { key: 'target', label: '评审对象', children: REVIEW_TARGET_LABELS[task.targetType] },
+    {
+      key: 'target',
+      label: '评审对象',
+      children: task.externalRef
+        ? `${REVIEW_TARGET_LABELS[task.targetType]} #${task.externalRef}`
+        : REVIEW_TARGET_LABELS[task.targetType],
+    },
     { key: 'trigger', label: '触发方式', children: REVIEW_TRIGGER_LABELS[task.triggerType] },
     { key: 'base', label: '基线（base）', children: describeRef(task.baseRef, task.baseSha) },
     { key: 'head', label: '待评审（head）', children: describeRef(task.headRef, task.headSha) },
@@ -78,13 +84,11 @@ function describeTask(
 }
 
 function CommentsSection({ task }: { task: ReviewTask }) {
+  const { token } = theme.useToken()
   const search = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
   const finished = isTerminalStatus(task.status)
-  const comments = useQuery({
-    ...reviewQueries.comments(task.id, search.includeFiltered),
-    enabled: finished,
-  })
+  const comments = useQuery(reviewQueries.comments(task.id, search.includeFiltered, task.status))
 
   return (
     <Card
@@ -103,13 +107,15 @@ function CommentsSection({ task }: { task: ReviewTask }) {
         </Space>
       }
     >
-      {!finished ? (
-        <Result
-          status="info"
-          title="评审进行中"
-          subTitle="评审完成后将在这里展示意见，页面会自动刷新。"
+      {!finished && (
+        <Alert
+          type="info"
+          showIcon
+          title="评审进行中，每轮评审结束后会在这里追加意见，页面会自动刷新。"
+          style={{ marginBottom: token.marginMD }}
         />
-      ) : comments.isError ? (
+      )}
+      {comments.isError ? (
         <Result
           status="error"
           title="评审意见加载失败"
@@ -120,7 +126,7 @@ function CommentsSection({ task }: { task: ReviewTask }) {
           }
         />
       ) : comments.data ? (
-        <ReviewCommentList comments={comments.data} />
+        <ReviewCommentList comments={comments.data} running={!finished} />
       ) : (
         <Skeleton active />
       )}

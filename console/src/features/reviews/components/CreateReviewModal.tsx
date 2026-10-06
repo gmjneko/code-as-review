@@ -6,8 +6,8 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components'
-import { useQuery } from '@tanstack/react-query'
-import { Typography } from 'antd'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Form, Typography } from 'antd'
 import type { ReactElement } from 'react'
 
 import { modelConfigQueries } from '@/features/model-configs'
@@ -15,12 +15,12 @@ import { repositoryQueries } from '@/features/repositories'
 import { runAction } from '@/shared/utils'
 
 import {
-  CREATABLE_TARGET_TYPES,
   REVIEW_EFFORT_LABELS,
   REVIEW_EFFORT_ROUNDS,
   REVIEW_EFFORTS,
   REVIEW_TARGET_LABELS,
   SAFE_GIT_REF,
+  TARGETS_BY_SOURCE,
 } from '../constants'
 import { useCreateReview } from '../queries'
 import type { CreateReviewRequest, ReviewEffort, ReviewTargetType } from '../types'
@@ -36,15 +36,11 @@ interface FormValues {
   targetType: ReviewTargetType
   baseRef?: string
   headRef?: string
+  externalRef?: string
   effort?: ReviewEffort
   modelConfigId?: number
   background?: string
 }
-
-const TARGET_OPTIONS = CREATABLE_TARGET_TYPES.map((value) => ({
-  value,
-  label: REVIEW_TARGET_LABELS[value],
-}))
 
 const EFFORT_OPTIONS = REVIEW_EFFORTS.map((value) => ({
   value,
@@ -63,13 +59,72 @@ function validateGitRef(_: unknown, value: string | undefined): Promise<void> {
 
 const GIT_REF_RULES = [{ required: true, validator: validateGitRef }]
 
-function toRequest({ baseRef, headRef, background, ...values }: FormValues): CreateReviewRequest {
+/** Mirrors the `externalRef` pattern of `ReviewDtos.Create`. */
+const EXTERNAL_REF = /^[1-9][0-9]{0,18}$/
+
+function needsExternalRef(targetType: ReviewTargetType | undefined): boolean {
+  return targetType === 'PULL_REQUEST' || targetType === 'ISSUE'
+}
+
+/** Only the reference fields that belong to the chosen target are sent. */
+function toRequest({
+  baseRef,
+  headRef,
+  externalRef,
+  background,
+  ...values
+}: FormValues): CreateReviewRequest {
   const isRange = values.targetType === 'COMMIT_RANGE'
   return {
     ...values,
     baseRef: isRange ? baseRef?.trim() : undefined,
     headRef: isRange ? headRef?.trim() : undefined,
+    externalRef: needsExternalRef(values.targetType) ? externalRef?.trim() : undefined,
     background: background?.trim() || undefined,
+  }
+}
+
+function TargetFields({ targetType }: { targetType: ReviewTargetType | undefined }) {
+  switch (targetType) {
+    case 'COMMIT_RANGE':
+      return (
+        <>
+          <ProFormText
+            name="baseRef"
+            label="基线（base）"
+            tooltip="变更所基于的分支或提交，评审 base 与 head 分叉之后 head 上的改动"
+            placeholder="main"
+            rules={GIT_REF_RULES}
+          />
+          <ProFormText
+            name="headRef"
+            label="待评审（head）"
+            placeholder="feature/login"
+            rules={GIT_REF_RULES}
+          />
+        </>
+      )
+    case 'PULL_REQUEST':
+    case 'ISSUE':
+      return (
+        <ProFormText
+          name="externalRef"
+          label={targetType === 'ISSUE' ? 'Issue 编号' : 'Pull Request 编号'}
+          placeholder="42"
+          rules={[
+            { required: true, whitespace: true, message: '请输入编号' },
+            { pattern: EXTERNAL_REF, transform: (v: string) => v.trim(), message: '必须是正整数' },
+          ]}
+        />
+      )
+    case 'LOCAL_WORKING_TREE':
+      return (
+        <Typography.Paragraph type="secondary">
+          评审仓库中尚未提交的改动（已暂存、未暂存及未跟踪的文件）。
+        </Typography.Paragraph>
+      )
+    default:
+      return null
   }
 }
 
@@ -95,37 +150,23 @@ function ReviewFormFields() {
         options={repositories.data?.map((repo) => ({ value: repo.id, label: repo.name }))}
         rules={[{ required: true, message: '请选择仓库' }]}
       />
-      <ProFormRadio.Group
-        name="targetType"
-        label="评审对象"
-        radioType="button"
-        options={TARGET_OPTIONS}
-        rules={[{ required: true, message: '请选择评审对象' }]}
-      />
-      <ProFormDependency name={['targetType']}>
-        {({ targetType }: Partial<FormValues>) =>
-          targetType === 'COMMIT_RANGE' ? (
+      <ProFormDependency name={['repositoryId', 'targetType']}>
+        {({ repositoryId, targetType }: Partial<FormValues>) => {
+          const repo = repositories.data?.find((r) => r.id === repositoryId)
+          const allowed = TARGETS_BY_SOURCE[repo?.sourceType ?? 'LOCAL']
+          return (
             <>
-              <ProFormText
-                name="baseRef"
-                label="基线（base）"
-                tooltip="变更所基于的分支或提交，评审 base 与 head 分叉之后 head 上的改动"
-                placeholder="main"
-                rules={GIT_REF_RULES}
+              <ProFormRadio.Group
+                name="targetType"
+                label="评审对象"
+                radioType="button"
+                options={allowed.map((value) => ({ value, label: REVIEW_TARGET_LABELS[value] }))}
+                rules={[{ required: true, message: '请选择评审对象' }]}
               />
-              <ProFormText
-                name="headRef"
-                label="待评审（head）"
-                placeholder="feature/login"
-                rules={GIT_REF_RULES}
-              />
+              <TargetFields targetType={targetType} />
             </>
-          ) : (
-            <Typography.Paragraph type="secondary">
-              评审仓库中尚未提交的改动（已暂存、未暂存及未跟踪的文件）。
-            </Typography.Paragraph>
           )
-        }
+        }}
       </ProFormDependency>
       <ProFormSelect<ReviewEffort>
         name="effort"
@@ -158,14 +199,37 @@ function ReviewFormFields() {
 
 export function CreateReviewModal({ trigger, defaultRepositoryId }: CreateReviewModalProps) {
   const create = useCreateReview()
+  const queryClient = useQueryClient()
+  const [form] = Form.useForm<FormValues>()
+
+  const targetsOf = (repositoryId: number | undefined) => {
+    const repo = queryClient
+      .getQueryData(repositoryQueries.list().queryKey)
+      ?.find((r) => r.id === repositoryId)
+    return TARGETS_BY_SOURCE[repo?.sourceType ?? 'LOCAL']
+  }
+
+  // A repository of another kind may not support the chosen target; fall back to its first one.
+  const handleValuesChange = (changed: Partial<FormValues>) => {
+    if (changed.repositoryId === undefined) return
+    const allowed = targetsOf(changed.repositoryId)
+    if (!allowed.includes(form.getFieldValue('targetType'))) {
+      form.setFieldValue('targetType', allowed[0])
+    }
+  }
 
   return (
     <ModalForm<FormValues>
       title="新建评审"
       trigger={trigger}
       width={600}
+      form={form}
       modalProps={{ destroyOnHidden: true }}
-      initialValues={{ repositoryId: defaultRepositoryId, targetType: 'LOCAL_WORKING_TREE' }}
+      onValuesChange={handleValuesChange}
+      initialValues={{
+        repositoryId: defaultRepositoryId,
+        targetType: targetsOf(defaultRepositoryId)[0],
+      }}
       onFinish={(values) => runAction(() => create.mutateAsync(toRequest(values)))}
     >
       <ReviewFormFields />

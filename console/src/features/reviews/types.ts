@@ -36,6 +36,7 @@ export interface ReviewTask {
   headRef: string | null
   baseSha: string | null
   headSha: string | null
+  externalRef: string | null
   effort: ReviewEffort
   status: ReviewTaskStatus
   filesChanged: number | null
@@ -59,14 +60,15 @@ export interface ReviewListParams {
 
 /**
  * Mirrors `review.task.dto.ReviewDtos.Create`. `baseRef` / `headRef` are required for
- * `COMMIT_RANGE`; omitted `effort` / `modelConfigId` fall back to the server default and the
- * user's default model.
+ * `COMMIT_RANGE`, `externalRef` (the PR / issue number) for `PULL_REQUEST` / `ISSUE`; omitted
+ * `effort` / `modelConfigId` fall back to the server default and the user's default model.
  */
 export interface CreateReviewRequest {
   repositoryId: number
   targetType: ReviewTargetType
   baseRef?: string
   headRef?: string
+  externalRef?: string
   effort?: ReviewEffort
   background?: string
   modelConfigId?: number

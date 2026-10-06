@@ -56,6 +56,7 @@
   | 分页 / 筛选表格（翻页不应阻塞导航） | `void queryClient.prefetchQuery(opts)`     | `useQuery({ ...opts, throwOnError: (_, q) => q.state.data === undefined })`，opts 中设 `placeholderData: keepPreviousData` |
 
 - **Mutation**：
+  - `mutationFn` 写成箭头函数再调用 api（`(body: X) => xxxApi.create(body)`），**不要**直接传 `xxxApi.create`：TanStack Query 会把上下文对象作为第二个参数传给 `mutationFn`，直接传入会让它落进 api 方法的可选参数里。
   - `onSuccess` 中 `return queryClient.invalidateQueries({ queryKey: xxxKeys.all })`，让 mutation 保持 pending 直到列表刷新完成。会影响其他记录的操作（如“设为默认”）要失效整个模块。
   - 成功提示用 `meta: { successMessage }`；失败由全局处理器 toast，不要在每个调用点重复写 `message.error`。只有需要自定义错误展示时才设置 `meta: { silent: true }` 并自行处理。
 - 需要轮询的数据用 `refetchInterval` 函数，在没有进行中的任务时返回 `false`（见 `reviewQueries.list`）。

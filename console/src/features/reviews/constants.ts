@@ -1,3 +1,5 @@
+import type { SourceType } from '@/features/repositories'
+
 import type {
   CommentCategory,
   CommentSeverity,
@@ -58,13 +60,14 @@ export const REVIEW_EFFORT_ROUNDS: Record<ReviewEffort, number> = {
 export const REVIEW_EFFORTS: readonly ReviewEffort[] = ['LOW', 'MEDIUM', 'HIGH']
 
 /**
- * Targets that can be requested from the console. PR / issue reviews need an external reference
- * that `ReviewDtos.Create` does not accept yet; they will come with webhook support.
+ * Targets each kind of repository can review, mirroring the `ScmProvider#supports`
+ * implementations. Only LOCAL has a provider today; remote ones review PRs and issues.
  */
-export const CREATABLE_TARGET_TYPES: readonly ReviewTargetType[] = [
-  'LOCAL_WORKING_TREE',
-  'COMMIT_RANGE',
-]
+export const TARGETS_BY_SOURCE: Record<SourceType, readonly ReviewTargetType[]> = {
+  LOCAL: ['LOCAL_WORKING_TREE', 'COMMIT_RANGE'],
+  GITHUB: ['PULL_REQUEST', 'ISSUE', 'COMMIT_RANGE'],
+  GITLAB: ['PULL_REQUEST', 'ISSUE', 'COMMIT_RANGE'],
+}
 
 /** Mirrors `scm.git.GitCli#requireSafeRef`. */
 export const SAFE_GIT_REF = /^[A-Za-z0-9][A-Za-z0-9._/@{}^~-]{0,254}$/

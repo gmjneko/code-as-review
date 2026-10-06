@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { modelConfigApi } from './api'
-import type { UpdateModelConfigRequest } from './types'
+import type { CreateModelConfigRequest, UpdateModelConfigRequest } from './types'
 
 export const modelConfigKeys = {
   all: ['model-configs'] as const,
@@ -28,7 +28,7 @@ function useInvalidateModelConfigs() {
 export function useCreateModelConfig() {
   const invalidate = useInvalidateModelConfigs()
   return useMutation({
-    mutationFn: modelConfigApi.create,
+    mutationFn: (body: CreateModelConfigRequest) => modelConfigApi.create(body),
     onSuccess: invalidate,
     meta: { successMessage: '模型配置已创建' },
   })
@@ -47,7 +47,7 @@ export function useUpdateModelConfig() {
 export function useDeleteModelConfig() {
   const invalidate = useInvalidateModelConfigs()
   return useMutation({
-    mutationFn: modelConfigApi.remove,
+    mutationFn: (id: number) => modelConfigApi.remove(id),
     onSuccess: invalidate,
     meta: { successMessage: '模型配置已删除' },
   })

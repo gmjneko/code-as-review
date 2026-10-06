@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { modelConfigQueries } from '@/features/model-configs'
-import { repositoryQueries } from '@/features/repositories'
-import { renderWithProviders } from '@/test/render'
+import { type Repository, repositoryQueries } from '@/features/repositories'
+import { createTestQueryClient, renderWithProviders } from '@/test/render'
 
 import { reviewApi } from '../api'
 import type { ReviewTask } from '../types'
@@ -23,27 +23,38 @@ vi.mock('../api', () => ({
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the form ignores the response
 const createdTask = { id: 1 } as ReviewTask
 
-function renderModal() {
-  const result = renderWithProviders(
-    <CreateReviewModal defaultRepositoryId={5} trigger={<button>new</button>} />,
-  )
+const localRepo: Repository = {
+  id: 5,
+  name: 'backend',
+  sourceType: 'LOCAL',
+  localPath: '/srv/repos/backend',
+  remoteUrl: null,
+  externalFullName: null,
+  defaultBranch: 'main',
+  credentialId: null,
+  lastSyncedAt: null,
+  createdAt: '2026-10-01T02:00:00Z',
+}
+
+const githubRepo: Repository = {
+  ...localRepo,
+  id: 6,
+  name: 'web',
+  sourceType: 'GITHUB',
+  localPath: null,
+  remoteUrl: 'https://github.com/acme/web',
+  externalFullName: 'acme/web',
+}
+
+function renderModal(defaultRepositoryId = localRepo.id) {
   // Seed the option lists so the test does not depend on other features' API modules.
-  result.queryClient.setQueryData(repositoryQueries.list().queryKey, [
-    {
-      id: 5,
-      name: 'backend',
-      sourceType: 'LOCAL',
-      localPath: '/srv/repos/backend',
-      remoteUrl: null,
-      externalFullName: null,
-      defaultBranch: 'main',
-      credentialId: null,
-      lastSyncedAt: null,
-      createdAt: '2026-10-01T02:00:00Z',
-    },
-  ])
-  result.queryClient.setQueryData(modelConfigQueries.list().queryKey, [])
-  return result
+  const queryClient = createTestQueryClient()
+  queryClient.setQueryData(repositoryQueries.list().queryKey, [localRepo, githubRepo])
+  queryClient.setQueryData(modelConfigQueries.list().queryKey, [])
+  return renderWithProviders(
+    <CreateReviewModal defaultRepositoryId={defaultRepositoryId} trigger={<button>new</button>} />,
+    { queryClient },
+  )
 }
 
 const confirmButton = () => screen.getByRole('button', { name: /确\s*认|确\s*定/ })
@@ -67,6 +78,7 @@ describe('CreateReviewModal', () => {
         targetType: 'LOCAL_WORKING_TREE',
         baseRef: undefined,
         headRef: undefined,
+        externalRef: undefined,
         background: undefined,
       }),
     )
@@ -96,6 +108,29 @@ describe('CreateReviewModal', () => {
         targetType: 'COMMIT_RANGE',
         baseRef: 'main',
         headRef: 'feature/login',
+        externalRef: undefined,
+        background: undefined,
+      }),
+    )
+  })
+
+  it('offers pull requests for a remote repository and sends the PR number', async () => {
+    const user = userEvent.setup()
+    renderModal(githubRepo.id)
+
+    await user.click(screen.getByRole('button', { name: 'new' }))
+    const targetGroup = await screen.findByRole('radiogroup')
+    expect(within(targetGroup).queryByText('本地工作区')).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Pull Request 编号'), ' 42 ')
+    await user.click(confirmButton())
+
+    await waitFor(() =>
+      expect(reviewApi.create).toHaveBeenCalledExactlyOnceWith({
+        repositoryId: 6,
+        targetType: 'PULL_REQUEST',
+        baseRef: undefined,
+        headRef: undefined,
+        externalRef: '42',
         background: undefined,
       }),
     )

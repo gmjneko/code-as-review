@@ -59,7 +59,7 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
       record
         ? update.mutateAsync({
             id: record.id,
-            // The backend leaves an omitted branch unchanged, so a cleared field is sent as ''.
+            // An omitted branch is left unchanged; a blank one clears it.
             body: { name: values.name.trim(), defaultBranch: trimmed(values.defaultBranch) ?? '' },
           })
         : create.mutateAsync(toCreateRequest(values)),
