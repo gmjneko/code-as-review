@@ -10,7 +10,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * The executor queue lives in memory, so on startup RUNNING tasks are known to be dead and are
@@ -30,7 +30,7 @@ public class StaleTaskRecovery {
                 .eq(ReviewTask::getStatus, TaskStatus.RUNNING)
                 .set(ReviewTask::getStatus, TaskStatus.FAILED)
                 .set(ReviewTask::getErrorMessage, "interrupted by service restart")
-                .set(ReviewTask::getFinishedAt, LocalDateTime.now()));
+                .set(ReviewTask::getFinishedAt, Instant.now()));
         var pending = taskMapper.selectList(Wrappers.<ReviewTask>lambdaQuery()
                 .eq(ReviewTask::getStatus, TaskStatus.PENDING)
                 .orderByAsc(ReviewTask::getId));

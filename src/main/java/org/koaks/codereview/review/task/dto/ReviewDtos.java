@@ -6,7 +6,7 @@ import org.koaks.codereview.review.domain.ReviewComment;
 import org.koaks.codereview.review.domain.ReviewEnums;
 import org.koaks.codereview.review.domain.ReviewTask;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public final class ReviewDtos {
 
@@ -46,9 +46,9 @@ public final class ReviewDtos {
             Long outputTokens,
             String summary,
             String errorMessage,
-            LocalDateTime createdAt,
-            LocalDateTime startedAt,
-            LocalDateTime finishedAt) {
+            Instant createdAt,
+            Instant startedAt,
+            Instant finishedAt) {
 
         public static TaskView of(ReviewTask t) {
             return new TaskView(t.getId(), t.getRepositoryId(), t.getTargetType(), t.getTriggerType(), t.getBaseRef(),

@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -18,10 +18,10 @@ public abstract class BaseEntity {
     private Long id;
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @TableLogic
     private Integer deleted;

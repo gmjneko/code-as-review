@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import org.koaks.codereview.repo.domain.CodeRepository;
 import org.koaks.codereview.repo.domain.SourceType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public final class RepoDtos {
 
@@ -34,8 +34,8 @@ public final class RepoDtos {
             String externalFullName,
             String defaultBranch,
             Long credentialId,
-            LocalDateTime lastSyncedAt,
-            LocalDateTime createdAt) {
+            Instant lastSyncedAt,
+            Instant createdAt) {
 
         public static View of(CodeRepository r) {
             return new View(r.getId(), r.getName(), r.getSourceType(), r.getLocalPath(), r.getRemoteUrl(),

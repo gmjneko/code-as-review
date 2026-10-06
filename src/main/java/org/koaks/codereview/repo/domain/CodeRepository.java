@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.koaks.codereview.common.persistence.BaseEntity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -21,5 +21,5 @@ public class CodeRepository extends BaseEntity {
     private String defaultBranch;
     private Long credentialId;
     private String webhookSecretCipher;
-    private LocalDateTime lastSyncedAt;
+    private Instant lastSyncedAt;
 }

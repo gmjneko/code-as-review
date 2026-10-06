@@ -156,8 +156,7 @@ sequenceDiagram
 
 1. **接入 OpenAPI（springdoc）**：DTO 类型改为生成，消除手写类型与后端漂移的风险。
 2. **`POST /api/auth/logout` 改为 permitAll**：refresh token 本身就是凭证。目前它要求 access token，前端只能先确保 token 新鲜再读取 refresh token，以免刷新轮换后注销了一个已作废的 token。
-3. **时间字段使用 `Instant` / `OffsetDateTime`**：目前 `LocalDateTime` 序列化不带时区，前端只能按浏览器本地时区解析。
-4. **细粒度错误码**：目前 message 为英文、code 较粗（`BAD_REQUEST` 等），前端无法本地化提示。
-5. **refresh token 放入 httpOnly Cookie**：降低 XSS 窃取风险（需要配合 CSRF 防护）。
-6. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前显示 `#仓库ID`）。
-7. **ID 序列化**：当前为数据库自增 ID，安全；若改用雪花 ID 等超过 2^53 的值，必须序列化为字符串。
+3. **细粒度错误码**：目前 message 为英文、code 较粗（`BAD_REQUEST` 等），前端无法本地化提示。
+4. **refresh token 放入 httpOnly Cookie**：降低 XSS 窃取风险（需要配合 CSRF 防护）。
+5. **评审任务列表**：缺少按状态筛选，也不返回仓库名称（前端目前显示 `#仓库ID`）。
+6. **ID 序列化**：当前为数据库自增 ID，安全；若改用雪花 ID 等超过 2^53 的值，必须序列化为字符串。

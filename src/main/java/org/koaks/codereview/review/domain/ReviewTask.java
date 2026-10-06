@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.koaks.codereview.common.persistence.BaseEntity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -34,6 +34,6 @@ public class ReviewTask extends BaseEntity {
     private String planResult;
     private String summary;
     private String errorMessage;
-    private LocalDateTime startedAt;
-    private LocalDateTime finishedAt;
+    private Instant startedAt;
+    private Instant finishedAt;
 }

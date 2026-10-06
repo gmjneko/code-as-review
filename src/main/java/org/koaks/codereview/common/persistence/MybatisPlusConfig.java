@@ -9,7 +9,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Configuration
 @MapperScan(basePackages = "org.koaks.codereview", annotationClass = org.apache.ibatis.annotations.Mapper.class)
@@ -27,15 +27,15 @@ public class MybatisPlusConfig {
         return new MetaObjectHandler() {
             @Override
             public void insertFill(MetaObject metaObject) {
-                LocalDateTime now = LocalDateTime.now();
-                strictInsertFill(metaObject, "createdAt", LocalDateTime.class, now);
-                strictInsertFill(metaObject, "updatedAt", LocalDateTime.class, now);
+                Instant now = Instant.now();
+                strictInsertFill(metaObject, "createdAt", Instant.class, now);
+                strictInsertFill(metaObject, "updatedAt", Instant.class, now);
                 strictInsertFill(metaObject, "deleted", Integer.class, 0);
             }
 
             @Override
             public void updateFill(MetaObject metaObject) {
-                setFieldValByName("updatedAt", LocalDateTime.now(), metaObject);
+                setFieldValByName("updatedAt", Instant.now(), metaObject);
             }
         };
     }

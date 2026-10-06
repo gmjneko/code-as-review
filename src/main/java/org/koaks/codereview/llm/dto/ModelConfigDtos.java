@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public final class ModelConfigDtos {
 
@@ -29,6 +29,6 @@ public final class ModelConfigDtos {
     }
 
     public record View(Long id, String name, String baseUrl, String modelName, String apiKeyMasked,
-                       boolean isDefault, LocalDateTime createdAt) {
+                       boolean isDefault, Instant createdAt) {
     }
 }

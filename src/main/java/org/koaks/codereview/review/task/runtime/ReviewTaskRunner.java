@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -98,7 +98,7 @@ public class ReviewTaskRunner {
                 .eq(ReviewTask::getId, taskId)
                 .eq(ReviewTask::getStatus, TaskStatus.PENDING)
                 .set(ReviewTask::getStatus, TaskStatus.RUNNING)
-                .set(ReviewTask::getStartedAt, LocalDateTime.now()));
+                .set(ReviewTask::getStartedAt, Instant.now()));
         if (claimed == 0) {
             return;
         }
@@ -183,7 +183,7 @@ public class ReviewTaskRunner {
         done.setId(taskId);
         done.setStatus(status);
         done.setErrorMessage(errorMessage);
-        done.setFinishedAt(LocalDateTime.now());
+        done.setFinishedAt(Instant.now());
         if (budget != null) {
             done.setInputTokens(budget.inputTokens());
             done.setOutputTokens(budget.outputTokens());

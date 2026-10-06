@@ -1,4 +1,4 @@
-import type { LocalDateTimeString } from '@/shared/api'
+import type { InstantString } from '@/shared/api'
 
 /** Mirrors `llm.dto.ModelConfigDtos.View`. */
 export interface ModelConfig {
@@ -8,7 +8,7 @@ export interface ModelConfig {
   modelName: string
   apiKeyMasked: string
   isDefault: boolean
-  createdAt: LocalDateTimeString
+  createdAt: InstantString
 }
 
 /** Mirrors `llm.dto.ModelConfigDtos.Create`. */

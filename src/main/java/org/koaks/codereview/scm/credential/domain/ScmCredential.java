@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.koaks.codereview.common.persistence.BaseEntity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /** Reserved for GitHub/GitLab: a PAT, GitHub App private key or OAuth token, encrypted at rest. */
 @Getter
@@ -19,5 +19,5 @@ public class ScmCredential extends BaseEntity {
     private String authType;
     private String host;
     private String secretCipher;
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 }

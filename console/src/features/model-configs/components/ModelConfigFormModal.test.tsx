@@ -26,7 +26,7 @@ const record: ModelConfig = {
   modelName: 'gpt-4o',
   apiKeyMasked: 'sk-****abcd',
   isDefault: true,
-  createdAt: '2026-10-01T10:00:00',
+  createdAt: '2026-10-01T02:00:00Z',
 }
 
 beforeEach(() => {

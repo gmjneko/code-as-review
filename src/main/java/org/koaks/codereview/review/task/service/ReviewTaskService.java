@@ -22,7 +22,7 @@ import org.koaks.codereview.scm.ScmProvider;
 import org.koaks.codereview.scm.ScmProviderRegistry;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
@@ -120,7 +120,7 @@ public class ReviewTaskService {
                 .eq(ReviewTask::getId, taskId)
                 .eq(ReviewTask::getStatus, TaskStatus.PENDING)
                 .set(ReviewTask::getStatus, TaskStatus.CANCELLED)
-                .set(ReviewTask::getFinishedAt, LocalDateTime.now()));
+                .set(ReviewTask::getFinishedAt, Instant.now()));
         if (dequeued == 0) {
             runner.cancelRunning(taskId);
         }

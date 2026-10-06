@@ -67,7 +67,7 @@
 - 路径相对于 `/api`：写 `/repositories`，而不是 `/api/repositories`。
 - DTO 类型与后端字段**完全一致**（名称、可空性）。后端可能返回 `null` 的字段标注为 `T | null`，不要用 `?` 糊弄过去。
 - 后端枚举写成联合类型，展示文案放在 `constants.ts`，并用 `Record<Union, ...>` 声明，后端新增枚举值时编译器会提醒补全。
-- 时间字段类型用 `LocalDateTimeString`，表格中用 `valueType: 'dateTime'`，其他地方用 dayjs 格式化。
+- 时间字段类型用 `InstantString`（UTC，带 `Z`），展示时由 dayjs 转为浏览器本地时区，表格中用 `valueType: 'dateTime'`，其他地方用 dayjs 格式化。
 - 判断错误类型用 `ApiError` 的 `code` / `status` / `isClientError` / `isSessionExpired`，不要匹配 message 文本。
 
 ## 表单与交互

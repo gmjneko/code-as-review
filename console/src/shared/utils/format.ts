@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 
-import type { LocalDateTimeString } from '@/shared/api'
+import type { InstantString } from '@/shared/api'
 
 const integerFormat = new Intl.NumberFormat('zh-CN')
 
@@ -10,8 +10,8 @@ export function formatInteger(value: number | null | undefined): string {
 
 /** Elapsed time between two backend timestamps, e.g. `1分23秒`; `-` until both are known. */
 export function formatDuration(
-  start: LocalDateTimeString | null | undefined,
-  end: LocalDateTimeString | null | undefined,
+  start: InstantString | null | undefined,
+  end: InstantString | null | undefined,
 ): string {
   if (!start || !end) return '-'
   const seconds = Math.max(0, dayjs(end).diff(dayjs(start), 'second'))

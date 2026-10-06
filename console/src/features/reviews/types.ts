@@ -1,4 +1,4 @@
-import type { LocalDateTimeString } from '@/shared/api'
+import type { InstantString } from '@/shared/api'
 
 // Unions mirror review.domain.ReviewEnums. Display metadata is keyed by these unions in
 // constants.ts, so a new backend value fails type checking until it is handled.
@@ -31,9 +31,9 @@ export interface ReviewTask {
   outputTokens: number | null
   summary: string | null
   errorMessage: string | null
-  createdAt: LocalDateTimeString
-  startedAt: LocalDateTimeString | null
-  finishedAt: LocalDateTimeString | null
+  createdAt: InstantString
+  startedAt: InstantString | null
+  finishedAt: InstantString | null
 }
 
 export interface ReviewListParams {

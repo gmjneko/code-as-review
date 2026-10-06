@@ -18,5 +18,5 @@ export interface PageQuery {
   size: number
 }
 
-/** Backend `LocalDateTime` serialized without an offset, e.g. `2026-10-05T23:13:00`. */
-export type LocalDateTimeString = string
+/** Backend `Instant` serialized as ISO-8601 UTC, e.g. `2026-10-05T15:13:00Z`. */
+export type InstantString = string
