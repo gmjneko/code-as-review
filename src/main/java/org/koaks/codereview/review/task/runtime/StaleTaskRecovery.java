@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.koaks.codereview.review.domain.ReviewEnums.TaskStatus;
 import org.koaks.codereview.review.domain.ReviewTask;
 import org.koaks.codereview.review.mapper.ReviewTaskMapper;
+import org.koaks.codereview.webhook.domain.IssueInvestigationTask;
+import org.koaks.codereview.webhook.domain.WebhookEnums;
+import org.koaks.codereview.webhook.mapper.IssueInvestigationTaskMapper;
+import org.koaks.codereview.webhook.service.IssueTaskRunner;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -23,6 +27,8 @@ public class StaleTaskRecovery {
 
     private final ReviewTaskMapper taskMapper;
     private final ReviewTaskRunner runner;
+    private final IssueInvestigationTaskMapper issueTaskMapper;
+    private final IssueTaskRunner issueRunner;
 
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
@@ -35,8 +41,18 @@ public class StaleTaskRecovery {
                 .eq(ReviewTask::getStatus, TaskStatus.PENDING)
                 .orderByAsc(ReviewTask::getId));
         pending.forEach(t -> runner.submit(t.getId()));
-        if (failed > 0 || !pending.isEmpty()) {
-            log.info("Recovered review tasks: {} interrupted, {} re-queued", failed, pending.size());
+        int issueFailed = issueTaskMapper.update(Wrappers.<IssueInvestigationTask>lambdaUpdate()
+                .eq(IssueInvestigationTask::getStatus, WebhookEnums.IssueTaskStatus.RUNNING)
+                .set(IssueInvestigationTask::getStatus, WebhookEnums.IssueTaskStatus.FAILED)
+                .set(IssueInvestigationTask::getErrorMessage, "interrupted by service restart")
+                .set(IssueInvestigationTask::getFinishedAt, Instant.now()));
+        var pendingIssues = issueTaskMapper.selectList(Wrappers.<IssueInvestigationTask>lambdaQuery()
+                .eq(IssueInvestigationTask::getStatus, WebhookEnums.IssueTaskStatus.PENDING)
+                .orderByAsc(IssueInvestigationTask::getId));
+        pendingIssues.forEach(t -> issueRunner.submit(t.getId()));
+        if (failed > 0 || !pending.isEmpty() || issueFailed > 0 || !pendingIssues.isEmpty()) {
+            log.info("Recovered tasks: {} PR interrupted, {} PR re-queued, {} Issue interrupted, {} Issue re-queued",
+                    failed, pending.size(), issueFailed, pendingIssues.size());
         }
     }
 

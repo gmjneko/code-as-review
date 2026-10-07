@@ -3,6 +3,7 @@ package org.koaks.codereview.review.agent;
 import io.agentscope.core.model.Model;
 import org.koaks.codereview.review.diff.FileDiff;
 import org.koaks.codereview.review.domain.ReviewEnums;
+import org.koaks.codereview.repo.domain.ExecutionMode;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -25,6 +26,15 @@ public record TaskRuntime(
         String background,
         ReviewEnums.Effort effort,
         Path codeRoot,
-        Path scratchRoot
+        Path scratchRoot,
+        ExecutionMode executionMode
 ) {
+
+    public TaskRuntime(long taskId, long userId, Model model, TaskBudget budget,
+                       CancellationToken cancellation, Map<String, FileDiff> diffsByPath,
+                       List<FileDiff> contextFiles, String background, ReviewEnums.Effort effort,
+                       Path codeRoot, Path scratchRoot) {
+        this(taskId, userId, model, budget, cancellation, diffsByPath, contextFiles, background,
+                effort, codeRoot, scratchRoot, ExecutionMode.LOCAL);
+    }
 }

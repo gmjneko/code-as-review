@@ -26,6 +26,13 @@ public final class WebhookEnums {
 
     public enum IssueTaskStatus {
         PENDING,
-        FAILED
+        RUNNING,
+        SUCCEEDED,
+        FAILED,
+        CANCELLED;
+
+        public boolean terminal() {
+            return this == SUCCEEDED || this == FAILED || this == CANCELLED;
+        }
     }
 }

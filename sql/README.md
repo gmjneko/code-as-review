@@ -4,7 +4,8 @@
 
 | 文件 | 内容 |
 | --- | --- |
-| `V1__schema.sql` | Code Review 全部业务表，包含 GitHub Webhook 和凭据备注字段 |
+| `V1__schema.sql` | Code Review 全部业务表，包含 GitHub Webhook、Issue Agent 和执行模式字段 |
+| `V2__issue_agent.sql` | 已有数据库升级到 Issue Agent 和仓库执行模式 |
 
 ```bash
 mysql -uroot -p < sql/V1__schema.sql
@@ -16,13 +17,13 @@ mysql -uroot -p < sql/V1__schema.sql
 | --- | --- |
 | `sys_user` | 注册用户 |
 | `scm_credential` | GitHub PAT 等 SCM 凭证（加密存储，支持备注） |
-| `code_repository` | 用户添加的仓库，`source_type` 区分 LOCAL / GITHUB / GITLAB |
+| `code_repository` | 用户添加的仓库，`source_type` 区分 LOCAL / GITHUB / GITLAB，`execution_mode` 区分 LOCAL / SANDBOX |
 | `llm_model_config` | 用户自己的 OpenAI 兼容模型配置，API Key 加密存储；`model_names` 保存模型能力 JSON |
 | `review_task` | 一次审查任务（一个任务对应一次 Agent 审查会话，含计划结果与完成轮数） |
 | `review_comment` | 审查发现；被误报过滤剔除的记为 `FILTERED`，保留以便追溯 |
 | `webhook_event` | GitHub Webhook 投递记录，用 `(provider, delivery_id)` 去重 |
 | `repository_trigger_rule` | 每个仓库的 GitHub 自动事件和 `/review` 命令规则 |
-| `issue_investigation_task` | Issue 自动事件产生的待处理任务；当前不会进入 Agent 执行器 |
+| `issue_investigation_task` | Issue Agent 任务、执行状态、诊断报告和 GitHub 评论记录 |
 
 ## AgentScope 自动创建的表
 
@@ -41,3 +42,6 @@ mysql -uroot -p < sql/V1__schema.sql
 `X-GitHub-Delivery` 做幂等去重。远程镜像和任务 worktree 默认位于
 `code-review.workspace-root` 下的 `repositories/{repositoryId}/mirror.git` 和
 `tasks/{taskId}/worktree`。
+
+已有数据库先执行 `V2__issue_agent.sql`。仓库执行模式默认为 `LOCAL`；切换为 `SANDBOX`
+时需要在服务机器上提供 Docker，并通过 `code-review.sandbox` 配置镜像、资源、网络和命令限制。

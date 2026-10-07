@@ -66,19 +66,38 @@ public class GitHubScmProvider implements ScmProvider {
 
     @Override
     public boolean supports(ReviewTarget target) {
-        return target instanceof ReviewTarget.PullRequest;
+        return target instanceof ReviewTarget.PullRequest || target instanceof ReviewTarget.Issue;
     }
 
     @Override
     public PreparedWorkspace prepare(CodeRepository repository, ReviewTarget target, Path taskDir) {
-        if (!(target instanceof ReviewTarget.PullRequest pullRequest)) {
-            throw BizException.badRequest("GitHub currently supports pull request reviews only");
+        String headSha;
+        String baseSha;
+        String diff;
+        String lockKey;
+        GitHubClient.GitHubPullRequest pr = null;
+        if (target instanceof ReviewTarget.PullRequest pullRequest) {
+            pr = github.pullRequest(repository.getExternalFullName(), pullRequest.number(),
+                    repository.getCredentialId(), repository.getUserId());
+            headSha = pr.head().sha();
+            baseSha = pr.base().sha();
+            lockKey = "github:repo:" + repository.getId();
+        } else if (target instanceof ReviewTarget.Issue) {
+            String branch = repository.getDefaultBranch();
+            if (branch == null || branch.isBlank()) {
+                branch = github.repository(repository.getExternalFullName(), repository.getCredentialId(),
+                        repository.getUserId()).defaultBranch();
+            }
+            branch = GitCli.requireSafeRef(branch);
+            headSha = null;
+            baseSha = branch;
+            lockKey = "github:repo:" + repository.getId();
+        } else {
+            throw BizException.badRequest("GitHub currently supports pull request and issue reviews only");
         }
         if (repository.getId() == null || repository.getCredentialId() == null) {
             throw BizException.badRequest("GitHub repository is missing identity or credential");
         }
-        GitHubClient.GitHubPullRequest pr = github.pullRequest(repository.getExternalFullName(), pullRequest.number(),
-                repository.getCredentialId(), repository.getUserId());
         Path mirror = properties.workspaceRoot().resolve("repositories").resolve(Long.toString(repository.getId()))
                 .resolve("mirror.git").toAbsolutePath();
         Path askpass;
@@ -88,15 +107,27 @@ public class GitHubScmProvider implements ScmProvider {
             Map<String, String> env = Map.of("GIT_ASKPASS", askpass.toString(), "GIT_USERNAME", "x-access-token");
             syncMirror(repository, mirror, env);
             Path worktree = taskDir.resolve("worktree").toAbsolutePath();
-            String headSha = GitCli.requireSafeRef(pr.head().sha());
-            String baseSha = GitCli.requireSafeRef(pr.base().sha());
-            String lockKey = "github:repo:" + repository.getId();
+            String checkoutRef;
+            if (pr != null) {
+                checkoutRef = GitCli.requireSafeRef(headSha);
+                baseSha = GitCli.requireSafeRef(baseSha);
+            } else {
+                checkoutRef = GitCli.requireSafeRef("refs/remotes/origin/" + baseSha);
+                headSha = git.runChecked(mirror, env, "rev-parse", "--verify", checkoutRef).strip();
+                // Issue workspaces are based on the latest remote default-branch commit.
+                baseSha = headSha;
+            }
             lock.withLock(lockKey, () -> git.runChecked(mirror, env, "worktree", "add", "--detach",
-                    worktree.toString(), headSha));
-            GitCli.Result mergeBaseResult = git.run(mirror, env, "merge-base", baseSha, headSha);
-            String mergeBase = mergeBaseResult.ok() ? mergeBaseResult.stdout().strip() : baseSha;
-            String diff = git.runChecked(mirror, env, "diff", "--no-color", "--no-ext-diff", "-M", mergeBase, headSha);
-            return new PreparedWorkspace(worktree, mergeBase, headSha, diff,
+                    worktree.toString(), checkoutRef));
+            if (pr != null) {
+                GitCli.Result mergeBaseResult = git.run(mirror, env, "merge-base", baseSha, headSha);
+                String mergeBase = mergeBaseResult.ok() ? mergeBaseResult.stdout().strip() : baseSha;
+                diff = git.runChecked(mirror, env, "diff", "--no-color", "--no-ext-diff", "-M", mergeBase, headSha);
+                baseSha = mergeBase;
+            } else {
+                diff = "";
+            }
+            return new PreparedWorkspace(worktree, baseSha, headSha, diff,
                     () -> removeWorktree(lockKey, mirror, worktree));
         } catch (IOException e) {
             deleteQuietly(taskDir);

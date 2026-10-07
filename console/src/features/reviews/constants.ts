@@ -41,6 +41,7 @@ export const REVIEW_TARGET_LABELS: Record<ReviewTargetType, string> = {
 
 export const REVIEW_TRIGGER_LABELS: Record<ReviewTriggerType, string> = {
   API: '手动',
+  AUTO_EVENT: '自动事件',
   WEBHOOK_COMMAND: 'Webhook 指令',
 }
 
@@ -65,8 +66,8 @@ export const REVIEW_EFFORTS: readonly ReviewEffort[] = ['LOW', 'MEDIUM', 'HIGH']
  */
 export const TARGETS_BY_SOURCE: Record<SourceType, readonly ReviewTargetType[]> = {
   LOCAL: ['LOCAL_WORKING_TREE', 'COMMIT_RANGE'],
-  GITHUB: ['PULL_REQUEST', 'ISSUE', 'COMMIT_RANGE'],
-  GITLAB: ['PULL_REQUEST', 'ISSUE', 'COMMIT_RANGE'],
+  GITHUB: ['PULL_REQUEST', 'COMMIT_RANGE'],
+  GITLAB: ['PULL_REQUEST', 'COMMIT_RANGE'],
 }
 
 /** Mirrors `scm.git.GitCli#requireSafeRef`. */

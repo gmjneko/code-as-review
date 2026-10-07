@@ -22,13 +22,16 @@ public class PromptTemplates {
     public static final String PLAN_USER = "plan_user";
     public static final String FILTER_SYSTEM = "filter_system";
     public static final String FILTER_USER = "filter_user";
+    public static final String ISSUE_SYSTEM = "issue_system";
+    public static final String ISSUE_USER = "issue_user";
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{\\{([a-z_]+)}}");
 
     private final Map<String, String> templates = new HashMap<>();
 
     public PromptTemplates() {
-        for (String name : List.of(MAIN_SYSTEM, MAIN_USER, PLAN_SYSTEM, PLAN_USER, FILTER_SYSTEM, FILTER_USER)) {
+        for (String name : List.of(MAIN_SYSTEM, MAIN_USER, PLAN_SYSTEM, PLAN_USER, FILTER_SYSTEM, FILTER_USER,
+                ISSUE_SYSTEM, ISSUE_USER)) {
             templates.put(name, load("prompts/" + name + ".md"));
         }
     }

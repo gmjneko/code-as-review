@@ -2,6 +2,7 @@ import type { InstantString } from '@/shared/api'
 
 /** Mirrors `repo.domain.SourceType`. */
 export type SourceType = 'LOCAL' | 'GITHUB' | 'GITLAB'
+export type ExecutionMode = 'LOCAL' | 'SANDBOX'
 
 /** Mirrors `repo.dto.RepoDtos.View`. */
 export interface Repository {
@@ -13,6 +14,7 @@ export interface Repository {
   externalFullName: string | null
   defaultBranch: string | null
   credentialId: number | null
+  executionMode?: ExecutionMode
   lastSyncedAt: InstantString | null
   createdAt: InstantString
 }
@@ -25,6 +27,7 @@ export interface CreateRepositoryRequest {
   remoteUrl?: string
   defaultBranch?: string
   credentialId?: number
+  executionMode?: ExecutionMode
 }
 
 export interface WebhookRule {
@@ -53,4 +56,5 @@ export interface WebhookConfig {
 export interface UpdateRepositoryRequest {
   name?: string
   defaultBranch?: string
+  executionMode?: ExecutionMode
 }

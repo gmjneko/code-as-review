@@ -42,6 +42,14 @@ code-review:
     plan-line-threshold: 80
     max-iters: 40
     git-timeout-seconds: 120
+  sandbox:
+    image: ${CR_SANDBOX_IMAGE:ubuntu:22.04}
+    workspace-root: ${CR_SANDBOX_WORKSPACE_ROOT:/workspace}
+    memory-size-bytes: ${CR_SANDBOX_MEMORY_BYTES:2147483648}
+    cpu-count: ${CR_SANDBOX_CPU_COUNT:2}
+    network: ${CR_SANDBOX_NETWORK:none}
+    command-timeout-seconds: ${CR_SANDBOX_COMMAND_TIMEOUT_SECONDS:120}
+    max-output-bytes: ${CR_SANDBOX_MAX_OUTPUT_BYTES:524288}
   llm-default:
     base-url: ${CR_LLM_BASE_URL:}
     api-key: ${CR_LLM_API_KEY:}
@@ -51,4 +59,3 @@ code-review:
     access-token-ttl: 30m
     refresh-token-ttl: 14d
     credential-key: ${CR_CREDENTIAL_KEY:change-me-credential-encryption-key}
-

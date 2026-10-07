@@ -21,6 +21,7 @@ public class UserAccountService {
                 .status(SystemUser.STATUS_ACTIVE)
                 .build();
         mapper.insert(user);
+
         return user;
     }
 

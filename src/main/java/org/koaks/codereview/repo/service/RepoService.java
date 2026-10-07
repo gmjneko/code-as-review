@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.koaks.codereview.common.exception.BizException;
 import org.koaks.codereview.repo.domain.CodeRepository;
+import org.koaks.codereview.repo.domain.ExecutionMode;
 import org.koaks.codereview.repo.domain.SourceType;
 import org.koaks.codereview.repo.mapper.CodeRepositoryMapper;
 import org.koaks.codereview.repo.dto.RepoDtos;
@@ -30,6 +31,7 @@ public class RepoService {
         repo.setRemoteUrl(request.remoteUrl());
         repo.setDefaultBranch(blankToNull(request.defaultBranch()));
         repo.setCredentialId(request.credentialId());
+        repo.setExecutionMode(request.executionMode() == null ? ExecutionMode.LOCAL : request.executionMode());
         providers.get(request.sourceType()).validate(repo);
         mapper.insert(repo);
         return repo;
@@ -65,11 +67,15 @@ public class RepoService {
         if (request.defaultBranch() != null) {
             repo.setDefaultBranch(blankToNull(request.defaultBranch()));
         }
+        if (request.executionMode() != null) {
+            repo.setExecutionMode(request.executionMode());
+        }
         // updateById skips null columns, which would make a cleared branch impossible to store.
         mapper.update(Wrappers.<CodeRepository>lambdaUpdate()
                 .eq(CodeRepository::getId, repo.getId())
                 .set(CodeRepository::getName, repo.getName())
                 .set(CodeRepository::getDefaultBranch, repo.getDefaultBranch())
+                .set(CodeRepository::getExecutionMode, repo.getExecutionMode())
                 .set(CodeRepository::getUpdatedAt, Instant.now()));
         return repo;
     }

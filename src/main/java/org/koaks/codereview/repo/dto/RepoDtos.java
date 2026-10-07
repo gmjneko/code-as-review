@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.koaks.codereview.repo.domain.CodeRepository;
+import org.koaks.codereview.repo.domain.ExecutionMode;
 import org.koaks.codereview.repo.domain.SourceType;
 
 import java.time.Instant;
@@ -23,14 +24,16 @@ public final class RepoDtos {
             String remoteUrl,
             @Size(max = 255)
             String defaultBranch,
-            Long credentialId
+            Long credentialId,
+            ExecutionMode executionMode
     ) {
     }
 
     /**
      * Null fields are left unchanged; a blank {@code defaultBranch} clears it.
      */
-    public record Update(@Size(max = 128) String name, @Size(max = 255) String defaultBranch) {
+    public record Update(@Size(max = 128) String name, @Size(max = 255) String defaultBranch,
+                         ExecutionMode executionMode) {
     }
 
     public record View(
@@ -42,13 +45,14 @@ public final class RepoDtos {
             String externalFullName,
             String defaultBranch,
             Long credentialId,
+            ExecutionMode executionMode,
             Instant lastSyncedAt,
             Instant createdAt) {
 
         public static View of(CodeRepository r) {
             return new View(r.getId(), r.getName(), r.getSourceType(), r.getLocalPath(), r.getRemoteUrl(),
-                    r.getExternalFullName(), r.getDefaultBranch(), r.getCredentialId(), r.getLastSyncedAt(),
-                    r.getCreatedAt());
+                    r.getExternalFullName(), r.getDefaultBranch(), r.getCredentialId(), r.getExecutionMode(),
+                    r.getLastSyncedAt(), r.getCreatedAt());
         }
     }
 

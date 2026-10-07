@@ -176,10 +176,11 @@ public class ChangeReviewer {
 
     private String mainRound(TaskRuntime rt, ReviewContext ctx, int round, List<MiddlewareBase> middlewares,
                              String userPrompt) {
-        HarnessAgent reviewer = agents.reviewer(rt.model(), prompts.get(PromptTemplates.MAIN_SYSTEM),
-                rt.codeRoot(), rt.scratchRoot().resolve("agent"), middlewares, limits.maxIters());
         RuntimeContext rc = runtimeContext(rt, "main-r" + round, ctx);
-        try (var ignored = rt.cancellation().register(() -> reviewer.interrupt(rc))) {
+        try (HarnessAgent reviewer = agents.reviewer(rt.model(), prompts.get(PromptTemplates.MAIN_SYSTEM),
+                rt.codeRoot(), rt.scratchRoot().resolve("agent"), middlewares, limits.maxIters(),
+                rt.executionMode());
+             var ignored = rt.cancellation().register(() -> reviewer.interrupt(rc))) {
             Msg reply = reviewer.call(List.of(new UserMessage(userPrompt)), rc).block(REVIEW_CALL_TIMEOUT);
             rt.cancellation().throwIfCancelled();
             return reply == null ? null : reply.getTextContent();

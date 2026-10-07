@@ -153,7 +153,9 @@ public class ReviewTaskRunner {
             Map<String, FileDiff> byPath = new LinkedHashMap<>();
             diffs.stream().filter(d -> !d.binary()).forEach(d -> byPath.put(d.path(), d));
             TaskRuntime rt = new TaskRuntime(task.getId(), task.getUserId(), model, budget, token, byPath,
-                    selection.context(), task.getBackground(), task.getEffort(), ws.codeRoot(), scratch);
+                    selection.context(), task.getBackground(), task.getEffort(), ws.codeRoot(), scratch,
+                    repo.getExecutionMode() == null ? org.koaks.codereview.repo.domain.ExecutionMode.LOCAL
+                            : repo.getExecutionMode());
 
             AtomicInteger confirmed = new AtomicInteger();
             ChangeReviewer.Outcome outcome = reviewer.review(rt, selection.reviewable(),

@@ -7,7 +7,7 @@ export type ReviewTaskStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 
 
 export type ReviewTargetType = 'LOCAL_WORKING_TREE' | 'COMMIT_RANGE' | 'PULL_REQUEST' | 'ISSUE'
 
-export type ReviewTriggerType = 'API' | 'WEBHOOK_COMMAND'
+export type ReviewTriggerType = 'API' | 'AUTO_EVENT' | 'WEBHOOK_COMMAND'
 
 export type ReviewEffort = 'LOW' | 'MEDIUM' | 'HIGH'
 

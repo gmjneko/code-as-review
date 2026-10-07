@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.koaks.codereview.common.api.PageResult;
 import org.koaks.codereview.common.exception.BizException;
+import org.koaks.codereview.common.persistence.AfterCommit;
+import org.koaks.codereview.common.persistence.ActiveTaskCounter;
 import org.koaks.codereview.config.CodeReviewProperties;
 import org.koaks.codereview.llm.service.LlmModelConfigService;
 import org.koaks.codereview.repo.domain.CodeRepository;
@@ -21,6 +23,7 @@ import org.koaks.codereview.scm.ReviewTarget;
 import org.koaks.codereview.scm.ScmProvider;
 import org.koaks.codereview.scm.ScmProviderRegistry;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,22 +41,28 @@ public class ReviewTaskService {
     private final ScmProviderRegistry providers;
     private final LlmModelConfigService modelConfigs;
     private final ReviewTaskRunner runner;
+    private final ActiveTaskCounter activeTasks;
     private final ReviewEnums.Effort defaultEffort;
 
     public ReviewTaskService(ReviewTaskMapper taskMapper, ReviewCommentMapper commentMapper,
                              RepoService repoService, ScmProviderRegistry providers,
                              LlmModelConfigService modelConfigs, ReviewTaskRunner runner,
-                             CodeReviewProperties properties) {
+                             CodeReviewProperties properties, ActiveTaskCounter activeTasks) {
         this.taskMapper = taskMapper;
         this.commentMapper = commentMapper;
         this.repoService = repoService;
         this.providers = providers;
         this.modelConfigs = modelConfigs;
         this.runner = runner;
+        this.activeTasks = activeTasks;
         this.defaultEffort = ReviewEnums.Effort.valueOf(properties.review().defaultEffort().toUpperCase(Locale.ROOT));
     }
 
+    @Transactional
     public ReviewTask create(long userId, ReviewDtos.Create request) {
+        if (request.targetType() == ReviewEnums.TargetType.ISSUE) {
+            throw BizException.badRequest("Issue investigations must be created through /api/issues");
+        }
         CodeRepository repo = repoService.getOwned(userId, request.repositoryId());
         ReviewTask task = new ReviewTask();
         task.setUserId(userId);
@@ -75,18 +84,16 @@ public class ReviewTaskService {
             throw BizException.badRequest(repo.getSourceType() + " repositories do not support " + request.targetType());
         }
         modelConfigs.checkUsable(userId, request.modelConfigId(), task.getModelName());
-        Long active = taskMapper.selectCount(Wrappers.<ReviewTask>lambdaQuery()
-                .eq(ReviewTask::getUserId, userId)
-                .in(ReviewTask::getStatus, TaskStatus.PENDING, TaskStatus.RUNNING));
-        if (active >= MAX_ACTIVE_TASKS_PER_USER) {
+        if (activeTasks.count(userId) >= MAX_ACTIVE_TASKS_PER_USER) {
             throw BizException.conflict("too many active reviews; wait for one to finish");
         }
 
         taskMapper.insert(task);
-        runner.submit(task.getId());
+        AfterCommit.run(() -> runner.submit(task.getId()));
         return task;
     }
 
+    @Transactional
     public ReviewTask createFromWebhook(CodeRepository repo, String externalRef, String baseRef, String headRef,
                                         String headSha, ReviewEnums.TriggerType triggerType, String triggerKey,
                                         ReviewEnums.Effort effort, Long modelConfigId, String modelName,
@@ -118,14 +125,11 @@ public class ReviewTaskService {
             throw BizException.badRequest("repository provider does not support pull request reviews");
         }
         modelConfigs.checkUsable(repo.getUserId(), modelConfigId, task.getModelName());
-        Long active = taskMapper.selectCount(Wrappers.<ReviewTask>lambdaQuery()
-                .eq(ReviewTask::getUserId, repo.getUserId())
-                .in(ReviewTask::getStatus, TaskStatus.PENDING, TaskStatus.RUNNING));
-        if (active >= MAX_ACTIVE_TASKS_PER_USER) {
+        if (activeTasks.count(repo.getUserId()) >= MAX_ACTIVE_TASKS_PER_USER) {
             throw BizException.conflict("too many active reviews; wait for one to finish");
         }
         taskMapper.insert(task);
-        runner.submit(task.getId());
+        AfterCommit.run(() -> runner.submit(task.getId()));
         return task;
     }
 

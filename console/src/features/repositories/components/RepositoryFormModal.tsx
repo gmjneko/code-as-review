@@ -13,7 +13,7 @@ import { runAction } from '@/shared/utils'
 
 import { SOURCE_TYPE_META, SOURCE_TYPES, SUPPORTED_SOURCE_TYPES } from '../constants'
 import { useCreateRepository, useUpdateRepository } from '../queries'
-import type { CreateRepositoryRequest, Repository, SourceType } from '../types'
+import type { CreateRepositoryRequest, ExecutionMode, Repository, SourceType } from '../types'
 
 interface RepositoryFormModalProps {
   trigger: ReactElement
@@ -28,6 +28,7 @@ interface FormValues {
   remoteUrl?: string
   defaultBranch?: string
   credentialId?: number
+  executionMode?: ExecutionMode
 }
 
 const SOURCE_TYPE_OPTIONS = SOURCE_TYPES.map((value) => {
@@ -56,6 +57,7 @@ function toCreateRequest(values: FormValues): CreateRepositoryRequest {
     remoteUrl: isLocal ? undefined : trimmed(values.remoteUrl),
     defaultBranch: trimmed(values.defaultBranch),
     credentialId: isLocal ? undefined : values.credentialId,
+    ...(values.executionMode === 'SANDBOX' ? { executionMode: 'SANDBOX' as const } : {}),
   }
 }
 
@@ -71,7 +73,13 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
         ? update.mutateAsync({
             id: record.id,
             // An omitted branch is left unchanged; a blank one clears it.
-            body: { name: values.name.trim(), defaultBranch: trimmed(values.defaultBranch) ?? '' },
+            body: {
+              name: values.name.trim(),
+              defaultBranch: trimmed(values.defaultBranch) ?? '',
+              ...(values.executionMode && values.executionMode !== record.executionMode
+                ? { executionMode: values.executionMode }
+                : {}),
+            },
           })
         : create.mutateAsync(toCreateRequest(values)),
     )
@@ -91,8 +99,9 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
               remoteUrl: record.remoteUrl ?? undefined,
               defaultBranch: record.defaultBranch ?? undefined,
               credentialId: record.credentialId ?? undefined,
+              executionMode: record.executionMode,
             }
-          : { sourceType: 'LOCAL' }
+          : { sourceType: 'LOCAL', executionMode: 'LOCAL' }
       }
       onFinish={handleFinish}
     >
@@ -104,6 +113,16 @@ export function RepositoryFormModal({ trigger, record }: RepositoryFormModalProp
           { required: true, whitespace: true, message: '请输入名称' },
           { max: 128, message: '最多 128 个字符' },
         ]}
+      />
+      <ProFormRadio.Group
+        name="executionMode"
+        label="执行模式"
+        radioType="button"
+        options={[
+          { value: 'LOCAL', label: '本地执行' },
+          { value: 'SANDBOX', label: 'Docker 沙箱' },
+        ]}
+        tooltip="本地模式直接使用任务临时工作区；沙箱模式把代码投影到 Docker 容器中执行。"
       />
       <ProFormRadio.Group
         name="sourceType"

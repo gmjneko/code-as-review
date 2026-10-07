@@ -1,6 +1,5 @@
 package org.koaks.codereview.webhook.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.koaks.codereview.common.crypto.SecretCipher;
 import org.koaks.codereview.common.exception.BizException;
@@ -10,13 +9,12 @@ import org.koaks.codereview.review.domain.ReviewEnums;
 import org.koaks.codereview.review.domain.ReviewTask;
 import org.koaks.codereview.review.task.service.ReviewTaskService;
 import org.koaks.codereview.scm.github.GitHubClient;
-import org.koaks.codereview.webhook.domain.IssueInvestigationTask;
 import org.koaks.codereview.webhook.domain.RepositoryTriggerRule;
 import org.koaks.codereview.webhook.domain.WebhookEnums;
 import org.koaks.codereview.webhook.domain.WebhookEvent;
-import org.koaks.codereview.webhook.mapper.IssueInvestigationTaskMapper;
 import org.koaks.codereview.webhook.mapper.WebhookEventMapper;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -34,7 +32,6 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GitHubWebhookService {
 
     private static final Pattern COMMAND = Pattern.compile("^/review(?:\\s+(low|medium|high))?(?:\\s*)$",
@@ -44,11 +41,44 @@ public class GitHubWebhookService {
     private final RepoService repos;
     private final SecretCipher cipher;
     private final WebhookEventMapper events;
-    private final IssueInvestigationTaskMapper issueTasks;
+    private final IssueTaskService issueTaskService;
+    /** Kept only for source compatibility with older focused tests/clients. */
+    private final org.koaks.codereview.webhook.mapper.IssueInvestigationTaskMapper legacyIssueTasks;
     private final TriggerRuleService rules;
     private final ReviewTaskService reviewTasks;
     private final GitHubClient github;
     private final JsonMapper json;
+
+    @Autowired
+    public GitHubWebhookService(RepoService repos, SecretCipher cipher, WebhookEventMapper events,
+                                IssueTaskService issueTaskService, TriggerRuleService rules,
+                                ReviewTaskService reviewTasks, GitHubClient github, JsonMapper json) {
+        this.repos = repos;
+        this.cipher = cipher;
+        this.events = events;
+        this.issueTaskService = issueTaskService;
+        this.legacyIssueTasks = null;
+        this.rules = rules;
+        this.reviewTasks = reviewTasks;
+        this.github = github;
+        this.json = json;
+    }
+
+    /** Compatibility constructor for the pre-IssueTaskService unit-test seam. */
+    public GitHubWebhookService(RepoService repos, SecretCipher cipher, WebhookEventMapper events,
+                                org.koaks.codereview.webhook.mapper.IssueInvestigationTaskMapper issueTasks,
+                                TriggerRuleService rules, ReviewTaskService reviewTasks,
+                                GitHubClient github, JsonMapper json) {
+        this.repos = repos;
+        this.cipher = cipher;
+        this.events = events;
+        this.issueTaskService = null;
+        this.legacyIssueTasks = issueTasks;
+        this.rules = rules;
+        this.reviewTasks = reviewTasks;
+        this.github = github;
+        this.json = json;
+    }
 
     @Transactional
     public void receive(String deliveryId, String eventType, String signature, String rawPayload) {
@@ -127,7 +157,9 @@ public class GitHubWebhookService {
             RepositoryTriggerRule rule = findRule(repo.getId(), WebhookEnums.EventKind.ISSUE, action,
                     WebhookEnums.Mode.AUTO, null);
             if (rule == null) throw new IgnoredWebhook();
-            createIssueTask(event, repo, text(payload, "issue", "number"), null);
+            createIssueTask(event, repo, text(payload, "issue", "number"), null,
+                    ReviewEnums.TriggerType.AUTO_EVENT, rule.getEffort(), rule.getModelConfigId(),
+                    rule.getModelName(), null);
             return;
         }
         if ("issue_comment".equals(eventType)) {
@@ -141,7 +173,9 @@ public class GitHubWebhookService {
             RepositoryTriggerRule rule = findRule(repo.getId(), kind, action, WebhookEnums.Mode.COMMAND, commandName);
             if (rule == null) throw new IgnoredWebhook();
             if (!isPr) {
-                createIssueTask(event, repo, text(payload, "issue", "number"), commandName);
+                createIssueTask(event, repo, text(payload, "issue", "number"), body.strip(),
+                        ReviewEnums.TriggerType.WEBHOOK_COMMAND, effort(command.group(1), rule.getEffort()),
+                        rule.getModelConfigId(), rule.getModelName(), null);
                 return;
             }
             String number = text(payload, "issue", "number");
@@ -157,15 +191,26 @@ public class GitHubWebhookService {
         throw new IgnoredWebhook();
     }
 
-    private void createIssueTask(WebhookEvent event, CodeRepository repo, String issueNumber, String command) {
-        IssueInvestigationTask task = new IssueInvestigationTask();
+    private void createIssueTask(WebhookEvent event, CodeRepository repo, String issueNumber, String command,
+                                 ReviewEnums.TriggerType triggerType, ReviewEnums.Effort effort,
+                                 Long modelConfigId, String modelName, String background) {
+        if (issueTaskService != null) {
+            var task = issueTaskService.createFromWebhook(repo, issueNumber, event.getId(), command,
+                    triggerType, effort, modelConfigId, modelName, background);
+            event.setTaskId(task.getId());
+            return;
+        }
+        var task = new org.koaks.codereview.webhook.domain.IssueInvestigationTask();
         task.setRepositoryId(repo.getId());
         task.setUserId(repo.getUserId());
         task.setIssueNumber(issueNumber);
         task.setWebhookEventId(event.getId());
         task.setCommand(command);
+        task.setTriggerType(triggerType);
+        task.setEffort(effort);
         task.setStatus(WebhookEnums.IssueTaskStatus.PENDING);
-        issueTasks.insert(task);
+        legacyIssueTasks.insert(task);
+        event.setTaskId(task.getId());
     }
 
     private RepositoryTriggerRule findRule(long repositoryId, WebhookEnums.EventKind kind, String action,

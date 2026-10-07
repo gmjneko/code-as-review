@@ -15,6 +15,7 @@ public class CodeRepository extends BaseEntity {
     private Long userId;
     private String name;
     private SourceType sourceType;
+    private ExecutionMode executionMode;
     private String localPath;
     private String remoteUrl;
     private String externalFullName;

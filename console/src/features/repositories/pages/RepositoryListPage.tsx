@@ -51,6 +51,16 @@ export function RepositoryListPage() {
       width: 140,
       render: (_, repo) => repo.defaultBranch ?? '-',
     },
+    {
+      title: '执行模式',
+      dataIndex: 'executionMode',
+      width: 110,
+      render: (_, repo) => (
+        <Tag color={repo.executionMode === 'SANDBOX' ? 'blue' : 'default'}>
+          {repo.executionMode === 'SANDBOX' ? 'Docker 沙箱' : '本地'}
+        </Tag>
+      ),
+    },
     { title: '创建时间', dataIndex: 'createdAt', valueType: 'dateTime', width: 180 },
     {
       title: '操作',
