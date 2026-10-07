@@ -32,6 +32,7 @@
         <agentscope.mysql.version>2.0.2</agentscope.mysql.version>
         <mybatis.version>4.0.1</mybatis.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
+        <redisson.version>4.2.0</redisson.version>
     </properties>
     <dependencies>
         <dependency>
@@ -53,6 +54,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
