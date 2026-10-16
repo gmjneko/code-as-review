@@ -26,6 +26,7 @@ public class ReviewTaskConfig {
 
     @Bean(name = RAG_EXECUTOR)
     public ThreadPoolTaskExecutor ragTaskExecutor(CodeReviewProperties properties) {
+        // RAG 任务包含 embedding、Milvus、ES 和 GitHub 网络调用，使用独立线程池避免阻塞代码审查。
         CodeReviewProperties.Worker cfg = properties.rag().worker();
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(Math.max(1, cfg.concurrency()));

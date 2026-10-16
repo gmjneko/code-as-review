@@ -11,6 +11,12 @@ import java.time.Instant;
 @Getter
 @Setter
 @TableName("rag_chunk")
+/**
+ * 可被 embedding 和 BM25 检索的最小文档单元。
+ *
+ * <p>一个 Issue/PR 正文对应一个 BODY chunk；每条普通评论对应一个 COMMENT chunk。chunk
+ * 自己携带父对象编号和评论作者，因此命中评论时不需要再猜测证据属于哪个父对象。</p>
+ */
 public class RagChunk extends BaseEntity {
     private Long itemId;
     private Long repositoryId;

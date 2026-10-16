@@ -15,6 +15,12 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+/**
+ * 将数据库关系汇总写回 GitHub 双方对象。
+ *
+ * <p>评论正文包含固定 marker。再次发布时先按 marker 查找并更新原评论，从而保证 webhook
+ * 重试、关系证据追加或服务重启不会不断创建重复评论。写回失败只更新发布状态，关系本身仍保留。</p>
+ */
 public class RagRelationPublisher {
     private final GitHubClient github;
     private final RagRelationMapper relations;
@@ -40,6 +46,7 @@ public class RagRelationPublisher {
         List<GitHubClient.GitHubIssueComment> comments = github.issueComments(repo.getExternalFullName(), number,
                 repo.getCredentialId(), repo.getUserId());
         String body = render(repo, type, number);
+        // marker 是稳定定位键；评论 ID 只用于 PATCH，不参与关系唯一性。
         GitHubClient.GitHubIssueComment existing = comments.stream()
                 .filter(c -> c.body() != null && c.body().contains(marker)).findFirst().orElse(null);
         if (existing != null && existing.id() != null) {

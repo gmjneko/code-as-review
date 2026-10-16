@@ -22,6 +22,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * RAG 任务的创建、去重和权限边界。
+ *
+ * <p>任务创建只写数据库，事务提交后才投递到内存线程池，避免事务回滚后仍执行外部
+ * GitHub/Milvus 操作。单条 webhook 使用固定 item dedupeKey，因此连续编辑会复用任务记录。</p>
+ */
 public class RagTaskService {
     private final RagTaskMapper tasks;
     private final RagRelationMapper relations;
@@ -44,6 +50,7 @@ public class RagTaskService {
         RagTask task = new RagTask(); task.setRepositoryId(repositoryId); task.setUserId(userId); task.setTaskType(RagEnums.TaskType.FULL_SYNC);
         task.setDedupeKey("full-sync:" + Instant.now().toEpochMilli()); task.setStatus(RagEnums.TaskStatus.PENDING);
         task.setItemsTotal(0); task.setItemsDone(0); task.setChunksDone(0); tasks.insert(task);
+        // 只有提交成功后才允许 worker 读取这条任务。
         AfterCommit.run(() -> runner.submit(task.getId()));
         return task;
     }
@@ -60,6 +67,7 @@ public class RagTaskService {
 
     private RagTask enqueue(CodeRepository repo, RagEnums.ItemType type, String number, Long webhookEventId, RagEnums.TaskType taskType) {
         if (!enabled()) return null;
+        // 同一父对象的编辑、评论和状态变化共用一个去重键；最新事件会重置待处理任务。
         String key = "item:" + type + ":" + number;
         RagTask task = tasks.selectOne(Wrappers.<RagTask>lambdaQuery().eq(RagTask::getRepositoryId, repo.getId())
                 .eq(RagTask::getDedupeKey, key).last("LIMIT 1"));

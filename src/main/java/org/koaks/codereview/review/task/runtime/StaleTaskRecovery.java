@@ -38,6 +38,7 @@ public class StaleTaskRecovery {
 
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
+        // 线程池不持久化，服务重启后 RUNNING 任务已经没有执行者；先标记失败，再重新投递 PENDING。
         int failed = taskMapper.update(Wrappers.<ReviewTask>lambdaUpdate()
                 .eq(ReviewTask::getStatus, TaskStatus.RUNNING)
                 .set(ReviewTask::getStatus, TaskStatus.FAILED)

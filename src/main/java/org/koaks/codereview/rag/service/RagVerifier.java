@@ -17,6 +17,13 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+/**
+ * 使用现有用户模型对召回候选做二次核验。
+ *
+ * <p>向量/BM25 只能说明文本相似，不能决定两个 Issue 是否真的重复。因此这里把完整的
+ * 源对象和候选对象重新交给无工具 AgentScope Agent。任何超时、模型异常或结构化输出异常
+ * 都按“不关联”处理，避免错误自动关联。</p>
+ */
 public class RagVerifier {
     private static final Duration TIMEOUT = Duration.ofMinutes(2);
     private final LlmModelConfigService modelConfigs;
@@ -47,7 +54,7 @@ public class RagVerifier {
             Msg reply = agent.call(List.of(new UserMessage(prompt)), MatchDecision.class, context).block(TIMEOUT);
             if (reply != null && reply.hasStructuredData()) return reply.getStructuredData(MatchDecision.class);
         } catch (RuntimeException ignored) {
-            // Verification failures are treated as a safe non-match by the caller.
+            // 核验失败按安全默认值处理，不能因为 Agent 临时异常而自动创建关系。
         }
         return new MatchDecision(false, false, 0d, "verification did not return a structured decision");
     }

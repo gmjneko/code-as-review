@@ -25,6 +25,13 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+/**
+ * GitHub 快照到 RAG 索引的同步器。
+ *
+ * <p>索引顺序是 GitHub -> MySQL 快照/chunk -> embedding -> Milvus/ES。chunk 的 SHA-256
+ * 没有变化时跳过 embedding；评论被删除或从 GitHub 返回列表中消失时，会同时删除向量并将
+ * MySQL 记录标记为 deleted。</p>
+ */
 public class RagIndexer {
     private static final int MAX_TEXT = 60_000;
     private final RagItemMapper items;
@@ -53,6 +60,7 @@ public class RagIndexer {
         if (item.getId() == null) items.insert(item); else items.updateById(item);
 
         List<RagChunk> desired = new ArrayList<>();
+        // 正文始终只有一个 chunk；标题和正文合并，保证短标题也能参与语义检索。
         desired.add(chunk(item, RagEnums.ChunkType.BODY, "BODY", null,
                 prefix(type, number, snapshot.title(), snapshot.body()), item.getState()));
         for (GitHubClient.GitHubIssueComment comment : snapshot.comments()) {
@@ -61,6 +69,7 @@ public class RagIndexer {
             desired.add(chunk(item, RagEnums.ChunkType.COMMENT, Long.toString(comment.id()), author,
                     prefix(type, number, "comment by @" + author, comment.body()), item.getState()));
         }
+        // 用 chunkKey 比较期望集合和数据库集合，可以识别删除的评论。
         List<RagChunk> existing = chunks.selectList(Wrappers.<RagChunk>lambdaQuery()
                 .eq(RagChunk::getItemId, item.getId()));
         Set<String> desiredKeys = new HashSet<>(desired.stream().map(RagIndexer::chunkKey).toList());
@@ -82,6 +91,7 @@ public class RagIndexer {
             if (old.getIndexedAt() == null || oldHash == null || !oldHash.equals(fresh.getContentHash())) changed.add(old);
         }
         if (!changed.isEmpty()) {
+            // 只有新增或内容变化的 chunk 重新调用 embedding，避免全量同步重复消耗配额。
             List<float[]> vectors = embeddings.embed(changed.stream().map(RagChunk::getTextContent).toList());
             milvus.upsert(changed, vectors);
             try { elasticsearch.upsert(changed); } catch (RuntimeException e) { log.warn("RAG ES indexing failed", e); }
@@ -97,6 +107,7 @@ public class RagIndexer {
                 .eq(RagItem::getItemType, type).eq(RagItem::getItemNumber, number).last("LIMIT 1"));
         if (item == null) return;
         List<RagChunk> existing = chunks.selectList(Wrappers.<RagChunk>lambdaQuery().eq(RagChunk::getItemId, item.getId()));
+        // 删除事件先清理两个检索后端，再保留 MySQL tombstone，便于审计和避免旧数据复活。
         if (!existing.isEmpty()) { try { milvus.delete(existing); } catch (RuntimeException e) { log.warn("RAG Milvus deletion failed", e); }
             try { elasticsearch.delete(existing); } catch (RuntimeException e) { log.warn("RAG ES deletion failed", e); } }
         existing.forEach(c -> { c.setDeleted(1); chunks.updateById(c); });
@@ -124,6 +135,7 @@ public class RagIndexer {
     }
 
     private static String prefix(RagEnums.ItemType type, String number, String title, String body) {
+        // 编号写进文本，便于 BM25/embedding 理解“这段内容属于哪个父对象”。
         return type.name() + " #" + number + "\n" + (title == null ? "" : title) + "\n\n" + (body == null ? "" : body);
     }
     private static String normalizeState(String value) { return "closed".equalsIgnoreCase(value) ? "closed" : "open"; }

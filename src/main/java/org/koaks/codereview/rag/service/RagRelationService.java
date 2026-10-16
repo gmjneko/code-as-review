@@ -12,12 +12,19 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * 关系的幂等写入和证据合并服务。
+ *
+ * <p>关系双方先按 ITEM_TYPE:number 字典序规范化，再依赖数据库唯一键避免重复。显式引用
+ * 的来源优先级高于 RAG，置信度保留历史最大值，reason/evidence 则追加去重。</p>
+ */
 public class RagRelationService {
     private final RagRelationMapper mapper;
 
     public RagRelation upsert(long repositoryId, RagEnums.ItemType sourceType, String sourceNumber,
                               RagEnums.ItemType targetType, String targetNumber, RagEnums.RelationKind kind,
                               RagEnums.RelationOrigin origin, double confidence, String reason, String evidenceJson) {
+        // 统一方向是双向写回和重复 webhook 幂等的基础。
         Pair pair = canonical(sourceType, sourceNumber, targetType, targetNumber);
         RagRelation relation = mapper.selectOne(Wrappers.<RagRelation>lambdaQuery()
                 .eq(RagRelation::getRepositoryId, repositoryId).eq(RagRelation::getSourceType, pair.sourceType())
@@ -32,6 +39,7 @@ public class RagRelationService {
             relation.setTargetPublishStatus(RagEnums.PublishStatus.PENDING); mapper.insert(relation);
         }
         if (relation.getRelationKind() == null) relation.setRelationKind(kind);
+        // 同一对对象先被 RAG 命中、后被显式引用命中时，只升级 origin，不新增行。
         if (origin == RagEnums.RelationOrigin.EXPLICIT_REFERENCE) relation.setOrigin(origin);
         relation.setConfidence(BigDecimal.valueOf(Math.max(0d, Math.min(1d, Math.max(confidence,
                 relation.getConfidence() == null ? 0d : relation.getConfidence().doubleValue())))));
@@ -55,6 +63,7 @@ public class RagRelationService {
     }
 
     public static Pair canonical(RagEnums.ItemType a, String an, RagEnums.ItemType b, String bn) {
+        // 不按调用方的 source/target 方向保存，确保 ISSUE->PR 与 PR->ISSUE 相同。
         String left = a.name() + ":" + an; String right = b.name() + ":" + bn;
         return left.compareTo(right) <= 0 ? new Pair(a, an, b, bn) : new Pair(b, bn, a, an);
     }

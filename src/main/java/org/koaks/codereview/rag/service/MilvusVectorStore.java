@@ -25,6 +25,12 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+/**
+ * Milvus 向量存储适配器。
+ *
+ * <p>首次使用时懒加载客户端、集合和 HNSW 索引。集合的主键是由仓库、父对象和 chunk
+ * 类型组成的稳定字符串，因此同一 chunk 重复 upsert 不会产生重复向量。</p>
+ */
 public class MilvusVectorStore {
     private final CodeReviewProperties properties;
     private MilvusClientV2 client;
@@ -32,6 +38,7 @@ public class MilvusVectorStore {
 
     public synchronized void upsert(List<RagChunk> chunks, List<float[]> vectors) {
         if (chunks.isEmpty()) return;
+        // 向量和 chunk 必须按相同下标对应；embedding 客户端已经保证返回数量一致。
         ensureReady();
         List<JsonObject> rows = new ArrayList<>();
         for (int i = 0; i < chunks.size(); i++) {
@@ -65,6 +72,7 @@ public class MilvusVectorStore {
     public synchronized List<Hit> search(float[] vector, long repositoryId, RagEnums.ItemType type,
                                           String state, String excludedNumber, int topK) {
         ensureReady();
+        // 过滤条件把检索范围限定到同一仓库和目标类型，并排除当前对象本身。
         StringBuilder filter = new StringBuilder("repository_id == ").append(repositoryId)
                 .append(" && item_type == '").append(type.name()).append("'");
         if (StringUtils.hasText(state)) filter.append(" && state == '").append(state).append("'");
@@ -104,6 +112,7 @@ public class MilvusVectorStore {
                 .collectionName(collection);
         if (StringUtils.hasText(database())) hasCollection.databaseName(database());
         if (!Boolean.TRUE.equals(client.hasCollection(hasCollection.build()))) {
+            // 不预置 schema，服务可以在空 Milvus 实例上自动创建所需集合。
             List<CreateCollectionReq.FieldSchema> fields = List.of(
                     CreateCollectionReq.FieldSchema.builder().name("chunk_id").dataType(DataType.VarChar)
                             .maxLength(255).isPrimaryKey(true).autoID(false).build(),
@@ -125,6 +134,7 @@ public class MilvusVectorStore {
             if (StringUtils.hasText(database())) request.databaseName(database());
             client.createCollection(request.build());
         }
+        // 新建或已存在的集合都要 load 后才能执行 ANN search。
         var load =
                 io.milvus.v2.service.collection.request.LoadCollectionReq.builder().collectionName(collection);
         if (StringUtils.hasText(database())) load.databaseName(database());

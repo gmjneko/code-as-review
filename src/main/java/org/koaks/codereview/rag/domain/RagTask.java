@@ -10,6 +10,12 @@ import java.time.Instant;
 @Getter
 @Setter
 @TableName("rag_task")
+/**
+ * RAG 异步任务记录。
+ *
+ * <p>队列本身在 JVM 内存中，数据库记录用于幂等去重、进度查询和服务重启恢复。Webhook
+ * 任务通过 webhookEventId 与原始事件建立追踪关系。</p>
+ */
 public class RagTask extends BaseEntity {
     private Long repositoryId;
     private Long userId;

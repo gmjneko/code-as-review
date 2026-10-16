@@ -43,8 +43,10 @@ code-review:
     max-iters: 40
     git-timeout-seconds: 120
   rag:
+    # RAG 默认关闭；开启后 Webhook 和手动全量同步才会创建 RAG 任务。
     enabled: ${CR_RAG_ENABLED:false}
     embedding:
+      # API key 只从环境变量读取，避免进入仓库、SQL 或日志。
       base-url: ${CR_RAG_EMBEDDING_BASE_URL:https://llm-2oj5be0xcuob8n58.cn-beijing.maas.aliyuncs.com/api/v1}
       api-key: ${CR_RAG_EMBEDDING_API_KEY:}
       model: ${CR_RAG_EMBEDDING_MODEL:qwen3.7-text-embedding}
@@ -56,6 +58,7 @@ code-review:
       database: ${CR_RAG_MILVUS_DATABASE:}
       collection: ${CR_RAG_MILVUS_COLLECTION:code_review_rag_chunks}
     elasticsearch:
+      # ES 是可选的 BM25 后端，关闭时自动使用 Milvus-only。
       enabled: ${CR_RAG_ES_ENABLED:false}
       url: ${CR_RAG_ES_URL:http://space-51q23auv.ap-nanjing.qcloudes.com}
       username: ${CR_RAG_ES_USERNAME:}

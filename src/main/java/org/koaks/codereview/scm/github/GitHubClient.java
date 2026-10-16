@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Component
+/**
+ * GitHub REST API 适配器。
+ *
+ * <p>RAG 使用这里的原始 Issue、PR 和普通评论接口，而不是只依赖 webhook 中的不完整
+ * payload。列表接口统一分页到 100 条，保证全量同步不会只导入第一页。</p>
+ */
 public class GitHubClient {
 
     private final RestClient client;
@@ -38,6 +44,7 @@ public class GitHubClient {
     }
 
     public List<GitHubIssue> issues(String fullName, String state, long credentialId, long userId) {
+        // GitHub 的 /issues 同时返回 PR；全量同步时由 RagTaskRunner 过滤 pull_request 字段。
         return pages("/repos/" + fullName + "/issues?state=" + state + "&per_page=100&page=", credentialId,
                 userId, GitHubIssue[].class);
     }
@@ -86,6 +93,7 @@ public class GitHubClient {
 
     private <T> List<T> pages(String pathPrefix, long credentialId, long userId, Class<T[]> type) {
         List<T> result = new ArrayList<>();
+        // 1000 页是保护上限，正常情况下通过“返回少于 100 条”结束分页。
         for (int page = 1; page <= 1000; page++) {
             T[] pageItems = client.get().uri(pathPrefix + page)
                     .headers(h -> h.setBearerAuth(token(credentialId, userId)))

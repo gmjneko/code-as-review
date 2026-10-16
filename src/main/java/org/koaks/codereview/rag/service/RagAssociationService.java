@@ -3,6 +3,7 @@ package org.koaks.codereview.rag.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.koaks.codereview.config.CodeReviewProperties;
+import org.koaks.codereview.rag.domain.RagChunk;
 import org.koaks.codereview.repo.domain.CodeRepository;
 import org.koaks.codereview.rag.domain.RagEnums;
 import org.koaks.codereview.rag.domain.RagItem;
@@ -20,6 +21,12 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * 单条 Issue/PR 的关联编排器。
+ *
+ * <p>每次处理先刷新当前对象的索引，再解析显式引用，最后分别执行 Issue->Issue、Issue->PR
+ * 或 PR->Issue 检索。候选最多取配置的 Top 3，并逐个读取 GitHub 原始对象交给 Agent 核验。</p>
+ */
 public class RagAssociationService {
     private final RagIndexer indexer;
     private final HybridRetriever retriever;
@@ -34,14 +41,25 @@ public class RagAssociationService {
         RagIndexer.IndexedItem indexed = indexer.index(repo, sourceType, sourceNumber);
         RagItem source = indexed.item();
         Set<RagReferenceParser.Reference> references = new LinkedHashSet<>();
-        indexed.chunks().forEach(c -> references.addAll(RagReferenceParser.parse(c.getTextContent(), repo.getExternalFullName())));
+        indexed.chunks().forEach(c ->
+                references.addAll(RagReferenceParser.parse(c.getTextContent(), repo.getExternalFullName()))
+        );
+        // 显式引用不依赖相似度，直接关联；后续混合检索仍会运行并合并同一关系的证据。
         for (RagReferenceParser.Reference reference : references) {
             if (sourceNumber.equals(reference.number())) continue;
-            try { explicit(repo, source, reference); } catch (RuntimeException e) { log.warn("RAG explicit reference failed", e); }
+            try {
+                explicit(repo, source, reference);
+            } catch (RuntimeException e) {
+                log.warn("RAG explicit reference failed", e);
+            }
         }
 
-        String query = indexed.chunks().stream().map(c -> c.getTextContent()).reduce((a, b) -> a + "\n\n" + b).orElse(source.getTitle());
+        String query = indexed.chunks().stream()
+                .map(RagChunk::getTextContent)
+                .reduce((a, b) -> a + "\n\n" + b)
+                .orElse(source.getTitle());
         if (sourceType == RagEnums.ItemType.ISSUE) {
+            // Issue->Issue 和 Issue->PR 是两个独立操作，避免 PR 命中挤掉重复 Issue。
             match(repo, source, query, RagEnums.ItemType.ISSUE, true);
             match(repo, source, query, RagEnums.ItemType.PR, false);
         } else {
@@ -57,9 +75,11 @@ public class RagAssociationService {
         List<HybridRetriever.Candidate> candidates = retriever.retrieve(repo.getId(), source.getItemType(), source.getItemNumber(),
                 query, targetType, prioritizeOpen);
         int limit = Math.max(1, properties.rag().retrieval().verifyTopK());
+        // 检索可召回更多结果，但只有 Top-K 候选进入昂贵的 Agent 核验。
         for (HybridRetriever.Candidate candidate : candidates.stream().limit(limit).toList()) {
             try {
-                if (source.getItemType() == targetType && source.getItemNumber().equals(candidate.itemNumber())) continue;
+                if (source.getItemType() == targetType && source.getItemNumber().equals(candidate.itemNumber()))
+                    continue;
                 Object original = targetType == RagEnums.ItemType.ISSUE
                         ? github.issue(repo.getExternalFullName(), candidate.itemNumber(), repo.getCredentialId(), repo.getUserId())
                         : github.pullRequest(repo.getExternalFullName(), candidate.itemNumber(), repo.getCredentialId(), repo.getUserId());
@@ -89,7 +109,7 @@ public class RagAssociationService {
         if (probe == null) return;
         RagEnums.ItemType targetType = probe.pullRequest() == null ? RagEnums.ItemType.ISSUE : RagEnums.ItemType.PR;
         if (source.getItemType() == targetType && source.getItemNumber().equals(reference.number())) return;
-        // Ensure an explicit target is represented in both indexes before writing the relation.
+        // 先把显式目标同步到索引，后续检索命中同一目标时可以合并评论证据。
         indexer.index(repo, targetType, reference.number());
         RagRelation row = relations.upsert(repo.getId(), source.getItemType(), source.getItemNumber(), targetType,
                 reference.number(), RagEnums.RelationKind.EXPLICIT_REFERENCE, RagEnums.RelationOrigin.EXPLICIT_REFERENCE,

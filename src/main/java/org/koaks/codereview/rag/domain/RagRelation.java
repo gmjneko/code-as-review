@@ -11,6 +11,12 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @TableName("rag_relation")
+/**
+ * 两个同仓库 Issue/PR 之间的规范化关系。
+ *
+ * <p>source/target 会在写入前排序规范化，因此 ISSUE #1 -> PR #2 和 PR #2 -> ISSUE #1
+ * 只会有一条数据库记录。evidenceJson 保存召回来源、评论 ID 和作者等可审计证据。</p>
+ */
 public class RagRelation extends BaseEntity {
     private Long repositoryId;
     private RagEnums.ItemType sourceType;

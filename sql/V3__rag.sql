@@ -1,5 +1,6 @@
 USE `code_as_review`;
 
+-- webhook_event 保存 RAG 任务 ID，便于从原始 webhook 追踪异步索引和关联结果。
 ALTER TABLE `webhook_event`
     ADD COLUMN `rag_task_id` BIGINT DEFAULT NULL AFTER `task_id`;
 
@@ -24,6 +25,8 @@ CREATE TABLE IF NOT EXISTS `rag_item`
     UNIQUE KEY `uk_rag_item` (`repository_id`, `item_type`, `item_number`),
     KEY `idx_rag_item_search` (`repository_id`, `item_type`, `state`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='Issue/PR snapshots for RAG';
+
+-- 一个 GitHub Issue/PR 对应一条 BODY chunk，每条普通评论对应一条 COMMENT chunk。
 
 CREATE TABLE IF NOT EXISTS `rag_chunk`
 (
@@ -50,6 +53,8 @@ CREATE TABLE IF NOT EXISTS `rag_chunk`
     KEY `idx_rag_chunk_lookup` (`repository_id`, `item_type`, `item_number`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='RAG chunks';
 
+-- 任务状态持久化在数据库，服务重启后可依据 PENDING/RUNNING 恢复。
+
 CREATE TABLE IF NOT EXISTS `rag_task`
 (
     `id`                 BIGINT       NOT NULL AUTO_INCREMENT,
@@ -73,6 +78,8 @@ CREATE TABLE IF NOT EXISTS `rag_task`
     UNIQUE KEY `uk_rag_task_dedupe` (`repository_id`, `dedupe_key`),
     KEY `idx_rag_task_status` (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT ='RAG indexing and association tasks';
+
+-- 关系双方按规范化顺序存储；唯一键保证重复 webhook 或显式引用不会重复建关系。
 
 CREATE TABLE IF NOT EXISTS `rag_relation`
 (

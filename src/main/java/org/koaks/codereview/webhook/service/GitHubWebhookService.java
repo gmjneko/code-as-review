@@ -200,6 +200,7 @@ public class GitHubWebhookService {
     }
 
     private boolean dispatchRag(WebhookEvent event, CodeRepository repo, JsonNode payload, String eventType, String action) {
+        // RAG 与 /review 规则分开调度：即使没有配置自动审查规则，Issue/PR 仍可进入 RAG。
         if (ragTasks == null) return false;
         if (!ragTasks.enabled()) return false;
         if (isBot(payload, "sender") || isBot(payload, "comment", "user")) return false;
@@ -225,6 +226,7 @@ public class GitHubWebhookService {
     }
 
     private static boolean isGeneratedAssociationComment(String body) {
+        // 自动汇总评论会再次触发 issue_comment webhook，marker 用于切断这个反馈环。
         return body != null && body.contains("<!-- code-as-review:rag:");
     }
 

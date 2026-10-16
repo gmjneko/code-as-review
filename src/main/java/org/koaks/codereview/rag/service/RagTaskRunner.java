@@ -20,6 +20,12 @@ import java.util.List;
 
 @Slf4j
 @Component
+/**
+ * RAG 任务执行器。
+ *
+ * <p>通过条件更新把 PENDING 原子地抢占为 RUNNING，避免多实例或恢复逻辑重复执行同一任务。
+ * Milvus/GitHub 的异常会让任务失败，下一次由任务重试机制重新处理。</p>
+ */
 public class RagTaskRunner {
     private final RagTaskMapper tasks;
     private final RepoService repos;
@@ -38,6 +44,7 @@ public class RagTaskRunner {
     }
 
     void run(long taskId) {
+        // 条件更新承担轻量级分布式锁的作用；抢不到任务说明已被其他 worker 执行。
         int claimed = tasks.update(Wrappers.<RagTask>lambdaUpdate().eq(RagTask::getId, taskId)
                 .eq(RagTask::getStatus, RagEnums.TaskStatus.PENDING)
                 .set(RagTask::getStatus, RagEnums.TaskStatus.RUNNING).set(RagTask::getStartedAt, Instant.now()));
@@ -54,6 +61,7 @@ public class RagTaskRunner {
                 finish(task, 1);
             } else {
                 List<Work> work = fullWork(repo);
+                // 全量同步先拿到稳定的 Issue/PR 编号列表，再逐项走同一套增量处理逻辑。
                 task.setItemsTotal(work.size()); tasks.updateById(task);
                 int done = 0;
                 for (Work item : work) {
