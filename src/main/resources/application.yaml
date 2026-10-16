@@ -42,6 +42,37 @@ code-review:
     plan-line-threshold: 80
     max-iters: 40
     git-timeout-seconds: 120
+  rag:
+    enabled: ${CR_RAG_ENABLED:false}
+    embedding:
+      base-url: ${CR_RAG_EMBEDDING_BASE_URL:https://llm-2oj5be0xcuob8n58.cn-beijing.maas.aliyuncs.com/api/v1}
+      api-key: ${CR_RAG_EMBEDDING_API_KEY:}
+      model: ${CR_RAG_EMBEDDING_MODEL:qwen3.7-text-embedding}
+      dimension: ${CR_RAG_EMBEDDING_DIMENSION:1024}
+      batch-size: ${CR_RAG_EMBEDDING_BATCH_SIZE:20}
+    milvus:
+      uri: ${CR_RAG_MILVUS_URI:http://124.220.39.95:19530}
+      token: ${CR_RAG_MILVUS_TOKEN:}
+      database: ${CR_RAG_MILVUS_DATABASE:}
+      collection: ${CR_RAG_MILVUS_COLLECTION:code_review_rag_chunks}
+    elasticsearch:
+      enabled: ${CR_RAG_ES_ENABLED:false}
+      url: ${CR_RAG_ES_URL:http://space-51q23auv.ap-nanjing.qcloudes.com}
+      username: ${CR_RAG_ES_USERNAME:}
+      password: ${CR_RAG_ES_PASSWORD:}
+      index: ${CR_RAG_ES_INDEX:code_review_rag_chunks}
+    retrieval:
+      backend-top-k: ${CR_RAG_BACKEND_TOP_K:20}
+      verify-top-k: ${CR_RAG_VERIFY_TOP_K:3}
+      rrf-k: ${CR_RAG_RRF_K:60}
+    worker:
+      concurrency: ${CR_RAG_WORKER_CONCURRENCY:1}
+      queue-capacity: ${CR_RAG_WORKER_QUEUE_CAPACITY:20}
+    timeouts:
+      embedding-seconds: ${CR_RAG_EMBEDDING_TIMEOUT_SECONDS:30}
+      milvus-seconds: ${CR_RAG_MILVUS_TIMEOUT_SECONDS:10}
+      elasticsearch-seconds: ${CR_RAG_ES_TIMEOUT_SECONDS:10}
+      verification-seconds: ${CR_RAG_VERIFICATION_TIMEOUT_SECONDS:120}
   sandbox:
     image: ${CR_SANDBOX_IMAGE:ubuntu:22.04}
     workspace-root: ${CR_SANDBOX_WORKSPACE_ROOT:/workspace}

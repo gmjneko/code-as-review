@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
 
 @Component
 public class GitHubClient {
@@ -36,11 +37,19 @@ public class GitHubClient {
         return get("/repos/" + fullName + "/issues/" + number, credentialId, userId, GitHubIssue.class);
     }
 
+    public List<GitHubIssue> issues(String fullName, String state, long credentialId, long userId) {
+        return pages("/repos/" + fullName + "/issues?state=" + state + "&per_page=100&page=", credentialId,
+                userId, GitHubIssue[].class);
+    }
+
+    public List<GitHubPullRequest> pullRequests(String fullName, String state, long credentialId, long userId) {
+        return pages("/repos/" + fullName + "/pulls?state=" + state + "&per_page=100&page=", credentialId,
+                userId, GitHubPullRequest[].class);
+    }
+
     public List<GitHubIssueComment> issueComments(String fullName, String number, long credentialId, long userId) {
-        GitHubIssueComment[] result = client.get().uri("/repos/" + fullName + "/issues/" + number + "/comments?per_page=100")
-                .headers(h -> h.setBearerAuth(token(credentialId, userId)))
-                .retrieve().body(GitHubIssueComment[].class);
-        return result == null ? List.of() : List.of(result);
+        return pages("/repos/" + fullName + "/issues/" + number + "/comments?per_page=100&page=", credentialId,
+                userId, GitHubIssueComment[].class);
     }
 
     public String createReviewComment(String fullName, String number, String body, String commitId,
@@ -75,6 +84,19 @@ public class GitHubClient {
                 .retrieve().body(type);
     }
 
+    private <T> List<T> pages(String pathPrefix, long credentialId, long userId, Class<T[]> type) {
+        List<T> result = new ArrayList<>();
+        for (int page = 1; page <= 1000; page++) {
+            T[] pageItems = client.get().uri(pathPrefix + page)
+                    .headers(h -> h.setBearerAuth(token(credentialId, userId)))
+                    .retrieve().body(type);
+            if (pageItems == null || pageItems.length == 0) break;
+            result.addAll(List.of(pageItems));
+            if (pageItems.length < 100) break;
+        }
+        return result;
+    }
+
     private String post(String path, Object body, long credentialId, long userId) {
         GitHubCommentResponse response = client.post().uri(path)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -88,13 +110,28 @@ public class GitHubClient {
                                        @JsonProperty("clone_url") String cloneUrl) {
     }
 
-    public record GitHubPullRequest(int number, Ref base, Ref head, String title, String body) {
+    public record GitHubPullRequest(int number, Ref base, Ref head, String title, String body, String state,
+                                    User user, @JsonProperty("html_url") String htmlUrl,
+                                    @JsonProperty("updated_at") String updatedAt) {
+        public GitHubPullRequest(int number, Ref base, Ref head, String title, String body) {
+            this(number, base, head, title, body, "open", null, null, null);
+        }
+
         public record Ref(String ref, String sha) {
         }
     }
 
     public record GitHubIssue(int number, String title, String body, String state, User user,
-                              List<Label> labels, @JsonProperty("html_url") String htmlUrl) {
+                              List<Label> labels, @JsonProperty("html_url") String htmlUrl,
+                              @JsonProperty("updated_at") String updatedAt,
+                              @JsonProperty("pull_request") PullRequestRef pullRequest) {
+        public GitHubIssue(int number, String title, String body, String state, User user,
+                           List<Label> labels, String htmlUrl) {
+            this(number, title, body, state, user, labels, htmlUrl, null, null);
+        }
+
+        public record PullRequestRef(String url) {
+        }
     }
 
     public record GitHubIssueComment(Long id, String body, User user,

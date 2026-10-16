@@ -10,6 +10,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class ReviewTaskConfig {
 
     public static final String EXECUTOR = "reviewTaskExecutor";
+    public static final String RAG_EXECUTOR = "ragTaskExecutor";
 
     @Bean(name = EXECUTOR)
     public ThreadPoolTaskExecutor reviewTaskExecutor(CodeReviewProperties properties) {
@@ -19,6 +20,18 @@ public class ReviewTaskConfig {
         executor.setMaxPoolSize(cfg.taskConcurrency());
         executor.setQueueCapacity(cfg.queueCapacity());
         executor.setThreadNamePrefix("review-task-");
+        executor.setWaitForTasksToCompleteOnShutdown(false);
+        return executor;
+    }
+
+    @Bean(name = RAG_EXECUTOR)
+    public ThreadPoolTaskExecutor ragTaskExecutor(CodeReviewProperties properties) {
+        CodeReviewProperties.Worker cfg = properties.rag().worker();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(Math.max(1, cfg.concurrency()));
+        executor.setMaxPoolSize(Math.max(1, cfg.concurrency()));
+        executor.setQueueCapacity(Math.max(1, cfg.queueCapacity()));
+        executor.setThreadNamePrefix("rag-task-");
         executor.setWaitForTasksToCompleteOnShutdown(false);
         return executor;
     }

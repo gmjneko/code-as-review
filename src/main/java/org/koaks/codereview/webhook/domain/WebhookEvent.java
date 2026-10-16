@@ -17,4 +17,5 @@ public class WebhookEvent extends BaseEntity {
     private String payload;
     private WebhookEnums.EventStatus status;
     private Long taskId;
+    private Long ragTaskId;
 }

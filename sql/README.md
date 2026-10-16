@@ -6,6 +6,7 @@
 | --- | --- |
 | `V1__schema.sql` | Code Review 全部业务表，包含 GitHub Webhook、Issue Agent 和执行模式字段 |
 | `V2__issue_agent.sql` | 已有数据库升级到 Issue Agent 和仓库执行模式 |
+| `V3__rag.sql` | Issue/PR RAG 索引、任务和关系表 |
 
 ```bash
 mysql -uroot -p < sql/V1__schema.sql
@@ -24,6 +25,9 @@ mysql -uroot -p < sql/V1__schema.sql
 | `webhook_event` | GitHub Webhook 投递记录，用 `(provider, delivery_id)` 去重 |
 | `repository_trigger_rule` | 每个仓库的 GitHub 自动事件和 `/review` 命令规则 |
 | `issue_investigation_task` | Issue Agent 任务、执行状态、诊断报告和 GitHub 评论记录 |
+| `rag_item` / `rag_chunk` | Issue、PR 和普通评论的 RAG 快照与切块 |
+| `rag_task` | RAG 全量同步和 Webhook 增量任务 |
+| `rag_relation` | 自动关联关系、证据和评论写回状态 |
 
 ## AgentScope 自动创建的表
 
@@ -45,3 +49,5 @@ mysql -uroot -p < sql/V1__schema.sql
 
 已有数据库先执行 `V2__issue_agent.sql`。仓库执行模式默认为 `LOCAL`；切换为 `SANDBOX`
 时需要在服务机器上提供 Docker，并通过 `code-review.sandbox` 配置镜像、资源、网络和命令限制。
+
+启用 Issue/PR RAG 前执行 `V3__rag.sql`，并通过 `CR_RAG_EMBEDDING_API_KEY` 配置 embedding 密钥。

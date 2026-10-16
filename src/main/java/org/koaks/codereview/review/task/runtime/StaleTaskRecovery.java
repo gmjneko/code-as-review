@@ -10,6 +10,10 @@ import org.koaks.codereview.webhook.domain.IssueInvestigationTask;
 import org.koaks.codereview.webhook.domain.WebhookEnums;
 import org.koaks.codereview.webhook.mapper.IssueInvestigationTaskMapper;
 import org.koaks.codereview.webhook.service.IssueTaskRunner;
+import org.koaks.codereview.rag.domain.RagEnums;
+import org.koaks.codereview.rag.domain.RagTask;
+import org.koaks.codereview.rag.mapper.RagTaskMapper;
+import org.koaks.codereview.rag.service.RagTaskRunner;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -29,6 +33,8 @@ public class StaleTaskRecovery {
     private final ReviewTaskRunner runner;
     private final IssueInvestigationTaskMapper issueTaskMapper;
     private final IssueTaskRunner issueRunner;
+    private final RagTaskMapper ragTaskMapper;
+    private final RagTaskRunner ragRunner;
 
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
@@ -50,9 +56,17 @@ public class StaleTaskRecovery {
                 .eq(IssueInvestigationTask::getStatus, WebhookEnums.IssueTaskStatus.PENDING)
                 .orderByAsc(IssueInvestigationTask::getId));
         pendingIssues.forEach(t -> issueRunner.submit(t.getId()));
-        if (failed > 0 || !pending.isEmpty() || issueFailed > 0 || !pendingIssues.isEmpty()) {
-            log.info("Recovered tasks: {} PR interrupted, {} PR re-queued, {} Issue interrupted, {} Issue re-queued",
-                    failed, pending.size(), issueFailed, pendingIssues.size());
+        int ragFailed = ragTaskMapper.update(Wrappers.<RagTask>lambdaUpdate()
+                .eq(RagTask::getStatus, RagEnums.TaskStatus.RUNNING)
+                .set(RagTask::getStatus, RagEnums.TaskStatus.FAILED)
+                .set(RagTask::getErrorMessage, "interrupted by service restart")
+                .set(RagTask::getFinishedAt, Instant.now()));
+        var pendingRag = ragTaskMapper.selectList(Wrappers.<RagTask>lambdaQuery()
+                .eq(RagTask::getStatus, RagEnums.TaskStatus.PENDING).orderByAsc(RagTask::getId));
+        pendingRag.forEach(t -> ragRunner.submit(t.getId()));
+        if (failed > 0 || !pending.isEmpty() || issueFailed > 0 || !pendingIssues.isEmpty() || ragFailed > 0 || !pendingRag.isEmpty()) {
+            log.info("Recovered tasks: {} PR interrupted, {} PR re-queued, {} Issue interrupted, {} Issue re-queued, {} RAG interrupted, {} RAG re-queued",
+                    failed, pending.size(), issueFailed, pendingIssues.size(), ragFailed, pendingRag.size());
         }
     }
 

@@ -33,6 +33,9 @@
         <mybatis.version>4.0.1</mybatis.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <redisson.version>4.2.0</redisson.version>
+        <milvus.version>2.6.17</milvus.version>
+        <dashscope.version>2.23.1</dashscope.version>
+        <elasticsearch.version>9.5.0</elasticsearch.version>
     </properties>
     <dependencies>
         <dependency>
@@ -86,6 +89,21 @@
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-harness</artifactId>
             <version>${agentscope.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.milvus</groupId>
+            <artifactId>milvus-sdk-java</artifactId>
+            <version>${milvus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>${dashscope.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>${elasticsearch.version}</version>
         </dependency>
 
         <dependency>

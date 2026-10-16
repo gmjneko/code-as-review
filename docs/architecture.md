@@ -13,6 +13,7 @@
 | `review` | 评审任务编排、Diff 处理、Agent、评论收集和结果发布 |
 | `scm` | Git/SCM Provider、工作区准备和凭据持久化；GitHub 使用持久 mirror + 任务 detached worktree |
 | `webhook` | 外部代码托管平台 Webhook 入口 |
+| `rag` | Issue/PR 内容同步、Milvus/ES 混合检索、Agent 核验和关系写回 |
 | `common` | 跨业务复用的响应、异常、锁、加密和持久化配置 |
 
 ## 依赖方向
@@ -50,3 +51,13 @@ Controller 不直接访问 Mapper。跨模块访问通过对方的 Service 或�
 GitHub 的自动事件默认包括 Pull Request `opened` 和 `synchronize`。事件规则存放在
 `repository_trigger_rule`，可以按仓库关闭或指定 effort/model。Webhook Secret 加密存放在
 `code_repository.webhook_secret_cipher`，GitHub PAT 加密存放在 `scm_credential`。
+
+## Issue/PR RAG 关联
+
+启用 `code-review.rag.enabled` 后，GitHub Issue、PR 和普通讨论评论会异步写入
+`rag_item`/`rag_chunk`，正文按一条内容切块，评论按单条切块。Milvus 负责 dense 向量召回，
+ES 通过 `code-review.rag.elasticsearch.enabled` 作为可选 BM25 召回；应用层按父 Issue/PR 去重
+并用 RRF 合并排名，随后由无工具 AgentScope Agent 对 Top 3 原始 GitHub 对象做最终核验。
+关系保存到 `rag_relation`，并在关联双方维护带 marker 的幂等汇总评论。已有仓库通过
+`POST /api/repositories/{id}/rag/sync` 手动全量同步，之后由 `issues`、`pull_request` 和
+`issue_comment` Webhook 增量更新。

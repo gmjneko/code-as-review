@@ -13,6 +13,8 @@ import org.koaks.codereview.webhook.domain.RepositoryTriggerRule;
 import org.koaks.codereview.webhook.domain.WebhookEnums;
 import org.koaks.codereview.webhook.domain.WebhookEvent;
 import org.koaks.codereview.webhook.mapper.WebhookEventMapper;
+import org.koaks.codereview.rag.domain.RagEnums;
+import org.koaks.codereview.rag.service.RagTaskService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,11 +50,12 @@ public class GitHubWebhookService {
     private final ReviewTaskService reviewTasks;
     private final GitHubClient github;
     private final JsonMapper json;
+    private final RagTaskService ragTasks;
 
     @Autowired
     public GitHubWebhookService(RepoService repos, SecretCipher cipher, WebhookEventMapper events,
                                 IssueTaskService issueTaskService, TriggerRuleService rules,
-                                ReviewTaskService reviewTasks, GitHubClient github, JsonMapper json) {
+                                ReviewTaskService reviewTasks, GitHubClient github, JsonMapper json, RagTaskService ragTasks) {
         this.repos = repos;
         this.cipher = cipher;
         this.events = events;
@@ -62,6 +65,7 @@ public class GitHubWebhookService {
         this.reviewTasks = reviewTasks;
         this.github = github;
         this.json = json;
+        this.ragTasks = ragTasks;
     }
 
     /** Compatibility constructor for the pre-IssueTaskService unit-test seam. */
@@ -78,6 +82,7 @@ public class GitHubWebhookService {
         this.reviewTasks = reviewTasks;
         this.github = github;
         this.json = json;
+        this.ragTasks = null;
     }
 
     @Transactional
@@ -133,13 +138,15 @@ public class GitHubWebhookService {
     private void dispatch(WebhookEvent event, CodeRepository repo, JsonNode payload) {
         String eventType = event.getEventType().toLowerCase(Locale.ROOT);
         String action = text(payload, "action");
+        boolean ragDispatched = dispatchRag(event, repo, payload, eventType, action);
         if ("pull_request".equals(eventType)) {
             if (isBot(payload, "sender") || !("opened".equals(action) || "synchronize".equals(action))) {
+                if (ragDispatched) return;
                 throw new IgnoredWebhook();
             }
             RepositoryTriggerRule rule = findRule(repo.getId(), WebhookEnums.EventKind.PULL_REQUEST, action,
                     WebhookEnums.Mode.AUTO, null);
-            if (rule == null) throw new IgnoredWebhook();
+            if (rule == null) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             String number = text(payload, "number");
             String headSha = text(payload, "pull_request", "head", "sha");
             ReviewTask task = reviewTasks.createFromWebhook(repo, number,
@@ -153,25 +160,26 @@ public class GitHubWebhookService {
             return;
         }
         if ("issues".equals(eventType)) {
-            if (isBot(payload, "sender") || !"opened".equals(action)) throw new IgnoredWebhook();
+            if (isBot(payload, "sender") || !"opened".equals(action)) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             RepositoryTriggerRule rule = findRule(repo.getId(), WebhookEnums.EventKind.ISSUE, action,
                     WebhookEnums.Mode.AUTO, null);
-            if (rule == null) throw new IgnoredWebhook();
+            if (rule == null) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             createIssueTask(event, repo, text(payload, "issue", "number"), null,
                     ReviewEnums.TriggerType.AUTO_EVENT, rule.getEffort(), rule.getModelConfigId(),
                     rule.getModelName(), null);
             return;
         }
         if ("issue_comment".equals(eventType)) {
-            if (!"created".equals(action) || isBot(payload, "comment", "user")) throw new IgnoredWebhook();
+            if (isGeneratedAssociationComment(text(payload, "comment", "body"))) throw new IgnoredWebhook();
+            if (!"created".equals(action) || isBot(payload, "comment", "user")) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             boolean isPr = text(payload, "issue", "pull_request", "url") != null;
             String body = text(payload, "comment", "body");
             Matcher command = body == null ? null : COMMAND.matcher(body.strip());
-            if (command == null || !command.matches() || !authorized(payload)) throw new IgnoredWebhook();
+            if (command == null || !command.matches() || !authorized(payload)) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             String commandName = "/review";
             WebhookEnums.EventKind kind = isPr ? WebhookEnums.EventKind.PR_COMMENT : WebhookEnums.EventKind.ISSUE_COMMENT;
             RepositoryTriggerRule rule = findRule(repo.getId(), kind, action, WebhookEnums.Mode.COMMAND, commandName);
-            if (rule == null) throw new IgnoredWebhook();
+            if (rule == null) { if (ragDispatched) return; throw new IgnoredWebhook(); }
             if (!isPr) {
                 createIssueTask(event, repo, text(payload, "issue", "number"), body.strip(),
                         ReviewEnums.TriggerType.WEBHOOK_COMMAND, effort(command.group(1), rule.getEffort()),
@@ -189,6 +197,35 @@ public class GitHubWebhookService {
             return;
         }
         throw new IgnoredWebhook();
+    }
+
+    private boolean dispatchRag(WebhookEvent event, CodeRepository repo, JsonNode payload, String eventType, String action) {
+        if (ragTasks == null) return false;
+        if (!ragTasks.enabled()) return false;
+        if (isBot(payload, "sender") || isBot(payload, "comment", "user")) return false;
+        if ("pull_request".equals(eventType) && Set.of("opened", "edited", "reopened", "closed", "synchronize").contains(action)) {
+            String number = text(payload, "number");
+            if (number != null) { event.setRagTaskId(ragTasks.enqueue(repo, RagEnums.ItemType.PR, number, event.getId()).getId()); return true; }
+        }
+        if ("issues".equals(eventType) && Set.of("opened", "edited", "reopened", "closed", "deleted").contains(action)) {
+            String number = text(payload, "issue", "number");
+            if (number != null) {
+                var task = "deleted".equals(action) ? ragTasks.enqueueDeleted(repo, RagEnums.ItemType.ISSUE, number, event.getId())
+                        : ragTasks.enqueue(repo, RagEnums.ItemType.ISSUE, number, event.getId());
+                event.setRagTaskId(task.getId()); return true;
+            }
+        }
+        if ("issue_comment".equals(eventType) && Set.of("created", "edited", "deleted").contains(action)
+                && !isGeneratedAssociationComment(text(payload, "comment", "body"))) {
+            String number = text(payload, "issue", "number");
+            boolean pr = text(payload, "issue", "pull_request", "url") != null;
+            if (number != null) { event.setRagTaskId(ragTasks.enqueue(repo, pr ? RagEnums.ItemType.PR : RagEnums.ItemType.ISSUE, number, event.getId()).getId()); return true; }
+        }
+        return false;
+    }
+
+    private static boolean isGeneratedAssociationComment(String body) {
+        return body != null && body.contains("<!-- code-as-review:rag:");
     }
 
     private void createIssueTask(WebhookEvent event, CodeRepository repo, String issueNumber, String command,
